@@ -54,6 +54,7 @@ protected:
     void UpDownInput(const FInputActionValue& Value);
 
 	void LightToggleInput(const FInputActionValue& Value);
+    void ScanInput(const FInputActionValue& Value);
 
 private:
     UPROPERTY()

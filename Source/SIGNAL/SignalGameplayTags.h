@@ -17,7 +17,7 @@ public:
 
     // Ability
     FGameplayTag Ability_Drone_LightToggle;
-    FGameplayTag Ability_Drone_ScanPulse;
+    FGameplayTag Ability_Drone_Scan;
     FGameplayTag Ability_Drone_Dash;
     FGameplayTag Ability_Drone_Interact;
     FGameplayTag Ability_Drone_PassiveBattery;
@@ -27,7 +27,7 @@ public:
     FGameplayTag State_Drone_LowBattery;
     FGameplayTag State_Drone_Charging;
     FGameplayTag State_Drone_Dashing;
-    FGameplayTag State_Drone_Scanning;
+    FGameplayTag State_Drone_ScanHit;
 
     // Effect
     FGameplayTag Effect_Battery_Drain_Base;
@@ -39,6 +39,7 @@ public:
 
     // Input
     FGameplayTag Input_Drone_LightToggle;
+    FGameplayTag Input_Drone_Scan;
 
     // SetByCaller
     FGameplayTag SetByCaller_BatteryDelta;

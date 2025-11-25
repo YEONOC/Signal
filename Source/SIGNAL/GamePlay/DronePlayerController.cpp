@@ -112,8 +112,16 @@ void ADronePlayerController::SetupInputComponent()
                     &ADronePlayerController::LightToggleInput);
             }
 
+            else if (ActionEntry.InputTag == SignalTags.Input_Drone_Scan)
+            {
+                EnhancedInput->BindAction(
+                    ActionEntry.InputAction,
+                    ETriggerEvent::Started,
+                    this,
+                    &ADronePlayerController::ScanInput
+                );
+            }
             // 나중에:
-            // else if (ActionEntry.InputTag == Tags.Input_Drone_Scan) { ... }
             // else if (ActionEntry.InputTag == Tags.Input_Drone_Dash) { ... }
         }
     }
@@ -185,6 +193,22 @@ void ADronePlayerController::LightToggleInput(const FInputActionValue& Value)
             bool bResult = ASC->TryActivateAbilitiesByInputTag(SignalTags.Ability_Drone_LightToggle);
             UE_LOG(LogTemp, Warning, TEXT("TryActivateAbilitiesByInputTag returned: %s"),
                 bResult ? TEXT("true") : TEXT("false"));
+        }
+    }
+}
+
+void ADronePlayerController::ScanInput(const FInputActionValue& Value)
+{
+    if (APawn* SignalPawn = GetPawn())
+    {
+        if (UAbilitySystemComponent* ASC =
+            SignalPawn->FindComponentByClass<UAbilitySystemComponent>())
+        {
+            const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
+
+            bool bResult = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(SignalTags.Ability_Drone_Scan));
+
+            UE_LOG(LogTemp, Warning, TEXT("ScanInput: TryActivateAbilitiesByTag = %s"), bResult ? TEXT("true") : TEXT("false"));
         }
     }
 }
