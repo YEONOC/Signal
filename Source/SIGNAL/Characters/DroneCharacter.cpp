@@ -8,6 +8,7 @@
 #include "Components/SpotLightComponent.h"
 #include "GameplayEffect.h"
 #include "SignalGameplayTags.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ADroneCharacter::ADroneCharacter()
@@ -22,6 +23,16 @@ ADroneCharacter::ADroneCharacter()
 	DroneLight = CreateDefaultSubobject<USpotLightComponent>("DroneLight");
 	DroneLight->SetupAttachment(GetRootComponent());
 	DroneLight->SetVisibility(false);
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (MoveComp)
+	{
+		MoveComp->DefaultLandMovementMode = MOVE_Flying;
+		MoveComp->bOrientRotationToMovement = false;
+		MoveComp->GravityScale = 0.0f;          // 중력 제거
+	}
+
+	bUseControllerRotationYaw = true;
 }
 
 // Called when the game starts or when spawned
