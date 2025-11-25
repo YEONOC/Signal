@@ -23,12 +23,12 @@ public:
     void InitializeAttributes();
     void GiveStartupAbilities();
 
+    // IAbilitySystemInterface
+    virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	// IAbilitySystemInterface
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 public:
     UPROPERTY()
