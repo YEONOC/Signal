@@ -8,6 +8,7 @@
 #include "AbilitySystemComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
+#include "Compo/ScanHighlightComponent.h"
 
 UGA_Drone_Scan::UGA_Drone_Scan()
 {
@@ -94,11 +95,20 @@ void UGA_Drone_Scan::ActivateAbility(
             AActor* HitActor = Res.GetActor();
             if (!HitActor || HitActor == Drone) continue;
 
-            // 일단 디버그용 출력
-            UE_LOG(LogTemp, Warning, TEXT("Scan hit actor: %s"), *HitActor->GetName());
-            bFoundInteresting = true;
+            // 스캔 대상에만 아웃라인: ScanHighlightComponent가 있을 때만
+            if (UScanHighlightComponent* HighlightComp = HitActor->FindComponentByClass<UScanHighlightComponent>())
+            {
+                // HazardLevel 읽어오기
+                int32 Hazard = HighlightComp->HazardLevel;
 
-            // 디버그 스피어/라인
+                HighlightComp->HighlightForScan(2.0f);
+
+                bFoundInteresting = true;
+
+                UE_LOG(LogTemp, Warning, TEXT("Scan hit actor (outlined): %s"), *HitActor->GetName());
+            }
+
+            // 디버그용 스피어
             DrawDebugSphere(World, HitActor->GetActorLocation(), 50.f, 12, FColor::Green, false, 1.0f);
         }
     }
