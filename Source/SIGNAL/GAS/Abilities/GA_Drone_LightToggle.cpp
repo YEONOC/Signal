@@ -8,13 +8,13 @@
 
 UGA_Drone_LightToggle::UGA_Drone_LightToggle()
 {
-    const FSignalGameplayTags& Tags = FSignalGameplayTags::Get();
+    const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
     UE_LOG(LogTemp, Warning, TEXT("LightToggle ctor Tag valid? %s"),
-        Tags.Ability_Drone_LightToggle.IsValid() ? TEXT("true") : TEXT("false"));
+        SignalTags.Ability_Drone_LightToggle.IsValid() ? TEXT("true") : TEXT("false"));
 
-    AbilityInputTag = Tags.Ability_Drone_LightToggle;
-    AbilityTags.AddTag(Tags.Ability_Drone_LightToggle);
+    AbilityInputTag = SignalTags.Ability_Drone_LightToggle;
+    AbilityTags.AddTag(SignalTags.Ability_Drone_LightToggle);
 }
 
 void UGA_Drone_LightToggle::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -40,7 +40,7 @@ void UGA_Drone_LightToggle::ActivateAbility(const FGameplayAbilitySpecHandle Han
         return;
     }
 
-    const FSignalGameplayTags& Tags = FSignalGameplayTags::Get();
+    const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
     const bool bIsOn = Drone->DroneLight->IsVisible();
 
@@ -48,13 +48,13 @@ void UGA_Drone_LightToggle::ActivateAbility(const FGameplayAbilitySpecHandle Han
     {
         // 🔻 Light OFF
         Drone->DroneLight->SetVisibility(false);
-        ASC->RemoveLooseGameplayTag(Tags.State_Drone_LightOn);
+        ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_LightOn);
     }
     else
     {
         // 🔺 Light ON
         Drone->DroneLight->SetVisibility(true);
-        ASC->AddLooseGameplayTag(Tags.State_Drone_LightOn);
+        ASC->AddLooseGameplayTag(SignalTags.State_Drone_LightOn);
 
     }
 
