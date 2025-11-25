@@ -36,8 +36,22 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Input")
     TObjectPtr<USignalInputConfig> InputConfig;
 
+    // 이동/카메라용 InputAction
+    UPROPERTY(EditDefaultsOnly, Category = "Input")
+    TObjectPtr<UInputAction> IA_Move;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Input")
+    TObjectPtr<UInputAction> IA_Look;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Input")
+    TObjectPtr<UInputAction> IA_UpDown;
+
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UDroneHUDWidget> DroneHUDClass;
+
+    void MoveInput(const FInputActionValue& Value);
+    void LookInput(const FInputActionValue& Value);
+    void UpDownInput(const FInputActionValue& Value);
 
 	void LightToggleInput(const FInputActionValue& Value);
 
