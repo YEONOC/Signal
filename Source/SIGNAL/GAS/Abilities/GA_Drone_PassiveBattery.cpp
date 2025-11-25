@@ -8,6 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
 #include "Characters/DroneCharacter.h"
+#include "Components/SpotLightComponent.h"
 
 UGA_Drone_PassiveBattery::UGA_Drone_PassiveBattery()
 {
@@ -124,13 +125,20 @@ void UGA_Drone_PassiveBattery::BatteryTick(const FGameplayAbilityActorInfo* Acto
         ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_LowBattery);
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("[BatteryTick] Battery=%.2f / Max=%.2f  Delta=%.2f  LightOn=%d  Charging=%d"),
-        Battery,
-        BatteryMax,
-        Delta,
-        ASC->HasMatchingGameplayTag(SignalTags.State_Drone_LightOn) ? 1 : 0,
-        ASC->HasMatchingGameplayTag(SignalTags.State_Drone_Charging) ? 1 : 0
-    );
+    // 배터리 0이면 라이트 강제 0ff
+    if (NewBattery <= 0.0f)
+    {
+        if (Drone->DroneLight && Drone->DroneLight->IsVisible())
+        {
+            Drone->DroneLight->SetVisibility(false);
+        }
+
+        ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_LightOn);
+
+        // (선택) 여기서 “배터리 부족” 사운드/이펙트 트리거 가능
+        UE_LOG(LogTemp, Warning, TEXT("Battery empty: Force light OFF"));
+    }
+
 }
 
 void UGA_Drone_PassiveBattery::EndAbility(
