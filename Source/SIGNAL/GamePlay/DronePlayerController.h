@@ -46,12 +46,16 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Input")
     TObjectPtr<UInputAction> IA_UpDown;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Input")
+    TObjectPtr<UInputAction> IA_Stop;
+
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UDroneHUDWidget> DroneHUDClass;
 
     void MoveInput(const FInputActionValue& Value);
     void LookInput(const FInputActionValue& Value);
     void UpDownInput(const FInputActionValue& Value);
+    void StopInput(const FInputActionValue& Value);
 
 	void LightToggleInput(const FInputActionValue& Value);
     void ScanInput(const FInputActionValue& Value);

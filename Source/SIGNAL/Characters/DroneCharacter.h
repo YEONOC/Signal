@@ -23,6 +23,8 @@ public:
     void InitializeAttributes();
     void GiveStartupAbilities();
 
+    virtual void Tick(float DeltaSeconds) override;
+
     // IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -42,6 +44,11 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "GAS")
     TSubclassOf<class UGameplayEffect> BatteryDeltaEffect;
 
+    // 이동 입력 처리 함수 (PC에서 호출)
+    void HandleMoveInput(const FVector2D& MoveVector);
+    void HandleUpDownInput(float Value);
+    void HandleStop();
+
 protected:
     // GAS Component
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
@@ -55,7 +62,21 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "GAS")
     TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 
+    // --- Drone Tilt Settings ---
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone|Tilt")
+    float MaxTiltAngle = 15.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone|Tilt")
+    float TiltInterpSpeed = 6.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone|Tilt")
+    float MinSpeedForTilt = 5.f;
+
+    // 틸트 기준이 되는 컴포넌트 (Capsule 아래)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone")
+    TObjectPtr<USceneComponent> BodyRoot;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone")
+    TObjectPtr<USkeletalMeshComponent> DroneMesh;
 
 };
