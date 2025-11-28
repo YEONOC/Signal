@@ -86,7 +86,7 @@ void ADronePlayerController::SetupInputComponent()
         );
     }
 
-    // 🔹 상승/하강
+    // 상승/하강
     if (IA_UpDown)
     {
         EnhancedInput->BindAction(
@@ -94,6 +94,17 @@ void ADronePlayerController::SetupInputComponent()
             ETriggerEvent::Triggered,
             this,
             &ADronePlayerController::UpDownInput
+        );
+    }
+
+    // 정지
+    if (IA_Stop)
+    {
+        EnhancedInput->BindAction(
+            IA_Stop,
+            ETriggerEvent::Started,
+            this,
+            &ADronePlayerController::StopInput
         );
     }
 
@@ -133,26 +144,9 @@ void ADronePlayerController::MoveInput(const FInputActionValue& Value)
 {
     const FVector2D MoveVector = Value.Get<FVector2D>();
 
-    APawn* ControlledPawn = GetPawn();
-    if (!ControlledPawn)
+    if (ADroneCharacter* Drone = Cast<ADroneCharacter>(GetPawn()))
     {
-        return;
-    }
-
-    // 컨트롤러의 바라보는 방향 기준으로 전/후/좌/우 계산
-    const FRotator ControlRot = GetControlRotation();
-    const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
-
-    const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-    const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-    if (MoveVector.Y != 0.f)
-    {
-        ControlledPawn->AddMovementInput(ForwardDir, MoveVector.Y);
-    }
-    if (MoveVector.X != 0.f)
-    {
-        ControlledPawn->AddMovementInput(RightDir, MoveVector.X);
+        Drone->HandleMoveInput(MoveVector);
     }
 }
 
@@ -160,25 +154,29 @@ void ADronePlayerController::LookInput(const FInputActionValue& Value)
 {
     const FVector2D LookAxis = Value.Get<FVector2D>();
     UE_LOG(LogTemp, Warning, TEXT("LookInput: X=%.2f Y=%.2f"), LookAxis.X, LookAxis.Y);
+
     // X: 좌우(Yaw), Y: 상하(Pitch)
     AddYawInput(LookAxis.X);
     AddPitchInput(LookAxis.Y);
+
 }
 
 void ADronePlayerController::UpDownInput(const FInputActionValue& Value)
 {
     const float Axis = Value.Get<float>();
 
-    APawn* ControlledPawn = GetPawn();
-    if (!ControlledPawn || FMath::IsNearlyZero(Axis))
+    if (ADroneCharacter* Drone = Cast<ADroneCharacter>(GetPawn()))
     {
-        return;
+        Drone->HandleUpDownInput(Axis);
     }
+}
 
-    // 월드 Z 축 기준으로 위/아래 이동
-    const FVector UpDir = FVector::UpVector; // (0,0,1)
-
-    ControlledPawn->AddMovementInput(UpDir, Axis);
+void ADronePlayerController::StopInput(const FInputActionValue& Value)
+{
+    if (ADroneCharacter* Drone = Cast<ADroneCharacter>(GetPawn()))
+    {
+        Drone->HandleStop();
+    }
 }
 
 void ADronePlayerController::LightToggleInput(const FInputActionValue& Value)
