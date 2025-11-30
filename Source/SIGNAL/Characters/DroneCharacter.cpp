@@ -23,6 +23,7 @@ ADroneCharacter::ADroneCharacter()
 
 	DroneLight = CreateDefaultSubobject<USpotLightComponent>("DroneLight");
 	DroneLight->SetupAttachment(GetRootComponent());
+	DroneLight->SetRelativeLocation(FVector(40.f, 0.f, 5.f));
 	DroneLight->SetVisibility(false);
 
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
