@@ -57,6 +57,9 @@ private:
     // 사이드 룸(파밍/충전용) 추가
     void AddSideRooms();
 
+    // 이웃 방 문 생기기
+    void BuildDoorConnections();
+
     // 실제 방 Actor 스폰
     void SpawnRooms();
 

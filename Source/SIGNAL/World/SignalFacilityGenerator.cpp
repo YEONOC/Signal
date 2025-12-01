@@ -1,6 +1,7 @@
 
 #include "SignalFacilityGenerator.h"
 #include "Engine/World.h"
+#include "SignalRoomBase.h"
 
 // Sets default values
 ASignalFacilityGenerator::ASignalFacilityGenerator()
@@ -87,6 +88,8 @@ void ASignalFacilityGenerator::GenerateLayout()
 
     // 사이드 룸 추가 (Storage / PowerRoom)
     AddSideRooms();
+    // 문 생성
+    BuildDoorConnections();
 }
 
 /**
@@ -170,7 +173,53 @@ void ASignalFacilityGenerator::SpawnRooms()
         );
         const FRotator SpawnRotation = FRotator::ZeroRotator;
 
-        World->SpawnActor<AActor>(RoomClass, SpawnLocation, SpawnRotation);
+        AActor* Spawned = World->SpawnActor<AActor>(RoomClass, SpawnLocation, SpawnRotation);
+
+        // 🔹 문 정보가 있다면 RoomBase에게 전달
+        if (ASignalRoomBase* RoomBase = Cast<ASignalRoomBase>(Spawned))
+        {
+            RoomBase->ApplyDoorConfig(Cell.Doors);
+        }
+    }
+}
+
+void ASignalFacilityGenerator::BuildDoorConnections()
+{
+    for (int32 y = 0; y < GridHeight; ++y)
+    {
+        for (int32 x = 0; x < GridWidth; ++x)
+        {
+            FSignalRoomCell* Cell = GetCell(x, y);
+            if (!Cell)
+                continue;
+
+            if (Cell->RoomType == ESignalRoomType::Empty)
+                continue;
+
+            FSignalRoomDoors& Doors = Cell->Doors;
+
+            // 북쪽(+Y) 이웃
+            if (FSignalRoomCell* North = GetCell(x, y + 1))
+            {
+                if (North->RoomType != ESignalRoomType::Empty)
+                {
+                    Doors.bNorth = true;
+                    North->Doors.bSouth = true;
+                }
+            }
+
+            // 동쪽(+X) 이웃
+            if (FSignalRoomCell* East = GetCell(x + 1, y))
+            {
+                if (East->RoomType != ESignalRoomType::Empty)
+                {
+                    Doors.bEast = true;
+                    East->Doors.bWest = true;
+                }
+            }
+
+            // 남쪽(-Y), 서쪽(-X)는 위에서 이미 세팅되므로 굳이 또 안 해도 됨
+        }
     }
 }
 
