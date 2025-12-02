@@ -90,35 +90,44 @@ void ASignalFacilityGenerator::GenerateLayout()
         return;
     }
 
-    // 시작 위치: 왼쪽 중간 정도
     int32 x = 1;
     int32 y = GridHeight / 2;
 
-    FSignalRoomCell* StartCell = GetCell(x, y);
-    if (!StartCell)
+    if (FSignalRoomCell* StartCell = GetCell(x, y))
     {
-        return;
+        StartCell->RoomType = ESignalRoomType::Start;
     }
-    StartCell->RoomType = ESignalRoomType::Start;
 
-    // 메인 경로 길이
     const int32 PathLength = RandomStream.RandRange(5, 8);
 
     for (int32 i = 0; i < PathLength; ++i)
     {
-        // 오른쪽으로 전진하면서, 약간 위/아래로 랜덤
-        int32 DirY = RandomStream.RandRange(-1, 1);
-        y = FMath::Clamp(y + DirY, 1, GridHeight - 2);
-        x = FMath::Clamp(x + 1, 1, GridWidth - 2);
+        // 1) 세로(위/아래로) 먼저 한 칸 움직일지 결정
+        int32 DirY = RandomStream.RandRange(-1, 1);   // -1, 0, 1
 
-        FSignalRoomCell* Cell = GetCell(x, y);
-        if (Cell)
+        if (DirY != 0)
         {
-            if (Cell->RoomType == ESignalRoomType::Empty)
+            int32 NewY = FMath::Clamp(y + DirY, 1, GridHeight - 2);
+            if (FSignalRoomCell* VerticalCell = GetCell(x, NewY))
             {
-                Cell->RoomType = ESignalRoomType::Corridor;
+                if (VerticalCell->RoomType == ESignalRoomType::Empty)
+                {
+                    VerticalCell->RoomType = ESignalRoomType::Corridor;
+                }
+            }
+            y = NewY; // y 업데이트
+        }
+
+        // 2) 그다음에 항상 오른쪽으로 한 칸
+        int32 NewX = FMath::Clamp(x + 1, 1, GridWidth - 2);
+        if (FSignalRoomCell* HorizontalCell = GetCell(NewX, y))
+        {
+            if (HorizontalCell->RoomType == ESignalRoomType::Empty)
+            {
+                HorizontalCell->RoomType = ESignalRoomType::Corridor;
             }
         }
+        x = NewX;
     }
 
     // 마지막 방은 Objective로 변경

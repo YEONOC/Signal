@@ -153,7 +153,7 @@ void ADronePlayerController::MoveInput(const FInputActionValue& Value)
 void ADronePlayerController::LookInput(const FInputActionValue& Value)
 {
     const FVector2D LookAxis = Value.Get<FVector2D>();
-    UE_LOG(LogTemp, Warning, TEXT("LookInput: X=%.2f Y=%.2f"), LookAxis.X, LookAxis.Y);
+    // UE_LOG(LogTemp, Warning, TEXT("LookInput: X=%.2f Y=%.2f"), LookAxis.X, LookAxis.Y);
 
     // X: 좌우(Yaw), Y: 상하(Pitch)
     AddYawInput(LookAxis.X);

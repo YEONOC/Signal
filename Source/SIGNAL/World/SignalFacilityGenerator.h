@@ -55,7 +55,7 @@ public:
 
     // 동일 Seed로 항상 동일한 맵 생성
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Generator")
-    int32 Seed = 12345;
+    int32 Seed = 82371;
 
 
 private:
