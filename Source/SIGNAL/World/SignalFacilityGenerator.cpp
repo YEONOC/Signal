@@ -9,6 +9,45 @@ ASignalFacilityGenerator::ASignalFacilityGenerator()
     PrimaryActorTick.bCanEverTick = false;
 }
 
+void ASignalFacilityGenerator::DebugLogGridLayout() const
+{
+    UE_LOG(LogTemp, Warning, TEXT("==== Facility Layout (Seed=%d) ===="), Seed);
+    UE_LOG(LogTemp, Warning, TEXT("GridWidth=%d, GridHeight=%d"), GridWidth, GridHeight);
+
+    for (int32 y = GridHeight - 1; y >= 0; --y)  // 위에서 아래로 보려고 거꾸로
+    {
+        FString Row;
+        for (int32 x = 0; x < GridWidth; ++x)
+        {
+            const FSignalRoomCell* Cell = GetCell(x, y);
+            TCHAR Symbol = TEXT('.'); // 기본: Empty
+
+            if (Cell)
+            {
+                switch (Cell->RoomType)
+                {
+                case ESignalRoomType::Start:      Symbol = TEXT('S'); break;
+                case ESignalRoomType::Corridor:   Symbol = TEXT('C'); break;
+                case ESignalRoomType::Objective:  Symbol = TEXT('O'); break;
+                case ESignalRoomType::Storage:    Symbol = TEXT('T'); break; // s 쓰면 start랑 헷갈리니까 T
+                case ESignalRoomType::PowerRoom:  Symbol = TEXT('P'); break;
+                case ESignalRoomType::Lab:        Symbol = TEXT('L'); break;
+                case ESignalRoomType::Empty:      Symbol = TEXT('.'); break;
+                default:                          Symbol = TEXT('?'); break;
+                }
+            }
+
+            Row.AppendChar(Symbol);
+            Row.AppendChar(TEXT(' '));
+        }
+
+        UE_LOG(LogTemp, Warning, TEXT("%2d: %s"), y, *Row);
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("==================================="));
+}
+
+
 void ASignalFacilityGenerator::BeginPlay()
 {
     Super::BeginPlay();
@@ -36,6 +75,8 @@ void ASignalFacilityGenerator::BeginPlay()
 
     // 2) 실제 Room Actor 스폰
     SpawnRooms();
+
+    DebugLogGridLayout();
 }
 
 /**
@@ -160,7 +201,6 @@ void ASignalFacilityGenerator::SpawnRooms()
 
         const int32 Index = RandomStream.RandRange(0, Archetype->RoomBlueprints.Num() - 1);
         TSubclassOf<AActor> RoomClass = Archetype->RoomBlueprints[Index];
-
         if (!*RoomClass)
         {
             continue;
@@ -171,17 +211,104 @@ void ASignalFacilityGenerator::SpawnRooms()
             Cell.Y * CellSize,
             0.f
         );
-        const FRotator SpawnRotation = FRotator::ZeroRotator;
+
+        // 기본값: 회전 없음 (Start/Corridor/Objective 쪽)
+        FRotator SpawnRotation = FRotator::ZeroRotator;
+
+        // 단일 입구 방이면 회전만 맞춰서 넣는 전략
+        const bool bIsSingleEntranceRoom =
+            (Cell.RoomType == ESignalRoomType::Storage ||
+                Cell.RoomType == ESignalRoomType::PowerRoom ||
+                Cell.RoomType == ESignalRoomType::Lab);
+
+        if (bIsSingleEntranceRoom)
+        {
+            const ESignalDoorDirection OpenDir = GetEntranceDirectionForSideRoom(Cell);
+
+            switch (OpenDir)
+            {
+            case ESignalDoorDirection::North:
+                SpawnRotation = FRotator(0.f, 90.f, 0.f);   // +X -> +Y
+                break;
+            case ESignalDoorDirection::South:
+                SpawnRotation = FRotator(0.f, -90.f, 0.f);  // +X -> -Y
+                break;
+            case ESignalDoorDirection::West:
+                SpawnRotation = FRotator(0.f, 0.f, 0.f);    // +X -> +X (West)
+                break;
+            case ESignalDoorDirection::East:
+                SpawnRotation = FRotator(0.f, 180.f, 0.f);  // +X -> -X (East)
+                break;
+            case ESignalDoorDirection::None:
+            default:
+                SpawnRotation = FRotator::ZeroRotator;
+                break;
+            }
+        }
 
         AActor* Spawned = World->SpawnActor<AActor>(RoomClass, SpawnLocation, SpawnRotation);
 
-        // 🔹 문 정보가 있다면 RoomBase에게 전달
-        if (ASignalRoomBase* RoomBase = Cast<ASignalRoomBase>(Spawned))
+        // Start / Corridor / Objective 같은 "문 위치 유동" 타입은 ApplyDoorConfig 사용
+        const bool bUsesDoorConfig =
+            (Cell.RoomType == ESignalRoomType::Start ||
+                Cell.RoomType == ESignalRoomType::Corridor ||
+                Cell.RoomType == ESignalRoomType::Objective);
+
+        if (bUsesDoorConfig)
         {
-            RoomBase->ApplyDoorConfig(Cell.Doors);
+            if (ASignalRoomBase* RoomBase = Cast<ASignalRoomBase>(Spawned))
+            {
+                RoomBase->ApplyDoorConfig(Cell.Doors);
+            }
         }
     }
 }
+
+ESignalDoorDirection ASignalFacilityGenerator::GetEntranceDirectionForSideRoom(const FSignalRoomCell& Cell) const
+{
+    const int32 X = Cell.X;
+    const int32 Y = Cell.Y;
+
+    // 위쪽(+Y)이 Corridor면 North
+    if (const FSignalRoomCell* N = GetCell(X, Y + 1))
+    {
+        if (N->RoomType == ESignalRoomType::Corridor)
+        {
+            return ESignalDoorDirection::North;
+        }
+    }
+
+    // 왼쪽(+X)이 Corridor면 West
+    if (const FSignalRoomCell* E = GetCell(X + 1, Y))
+    {
+        if (E->RoomType == ESignalRoomType::Corridor)
+        {
+            return ESignalDoorDirection::West;
+        }
+    }
+
+    // 아래쪽(-Y)이 Corridor면 South
+    if (const FSignalRoomCell* S = GetCell(X, Y - 1))
+    {
+        if (S->RoomType == ESignalRoomType::Corridor)
+        {
+            return ESignalDoorDirection::South;
+        }
+    }
+
+    // 오른쪽(-X)이 Corridor면 East
+    if (const FSignalRoomCell* W = GetCell(X - 1, Y))
+    {
+        if (W->RoomType == ESignalRoomType::Corridor)
+        {
+            return ESignalDoorDirection::East;
+        }
+    }
+
+    // 못 찾으면 None
+    return ESignalDoorDirection::None;
+}
+
 
 void ASignalFacilityGenerator::BuildDoorConnections()
 {
@@ -190,38 +317,65 @@ void ASignalFacilityGenerator::BuildDoorConnections()
         for (int32 x = 0; x < GridWidth; ++x)
         {
             FSignalRoomCell* Cell = GetCell(x, y);
-            if (!Cell)
-                continue;
-
-            if (Cell->RoomType == ESignalRoomType::Empty)
+            if (!Cell || Cell->RoomType == ESignalRoomType::Empty)
                 continue;
 
             FSignalRoomDoors& Doors = Cell->Doors;
 
-            // 북쪽(+Y) 이웃
+            // North(+Y)는 그대로
             if (FSignalRoomCell* North = GetCell(x, y + 1))
             {
                 if (North->RoomType != ESignalRoomType::Empty)
                 {
-                    Doors.bNorth = true;
-                    North->Doors.bSouth = true;
+                    if (IsSideRoom(Cell->RoomType) && IsSideRoom(North->RoomType))
+                    {
+                        // skip
+                    }
+                    else
+                    {
+                        Doors.bNorth = true;
+                        North->Doors.bSouth = true;
+                    }
                 }
             }
 
-            // 동쪽(+X) 이웃
-            if (FSignalRoomCell* East = GetCell(x + 1, y))
+            // West: x+1 (+X가 West)
+            if (FSignalRoomCell* West = GetCell(x + 1, y))
+            {
+                if (West->RoomType != ESignalRoomType::Empty)
+                {
+                    if (IsSideRoom(Cell->RoomType) && IsSideRoom(West->RoomType))
+                    {
+                        // skip
+                    }
+                    else
+                    {
+                        Doors.bWest = true;
+                        West->Doors.bEast = true;
+                    }
+                }
+            }
+
+            // East: x-1 (-X가 East)
+            if (FSignalRoomCell* East = GetCell(x - 1, y))
             {
                 if (East->RoomType != ESignalRoomType::Empty)
                 {
-                    Doors.bEast = true;
-                    East->Doors.bWest = true;
+                    if (IsSideRoom(Cell->RoomType) && IsSideRoom(East->RoomType))
+                    {
+                        // skip
+                    }
+                    else
+                    {
+                        Doors.bEast = true;
+                        East->Doors.bWest = true;
+                    }
                 }
             }
-
-            // 남쪽(-Y), 서쪽(-X)는 위에서 이미 세팅되므로 굳이 또 안 해도 됨
         }
     }
 }
+
 
 /**
  * (X, Y) 셀 포인터 반환

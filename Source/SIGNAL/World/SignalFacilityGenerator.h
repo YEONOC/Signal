@@ -18,6 +18,21 @@ class SIGNAL_API ASignalFacilityGenerator : public AActor
 
 public:
     ASignalFacilityGenerator();
+    void DebugLogGridLayout() const;
+
+    static bool IsSideRoom(ESignalRoomType Type)
+    {
+        return Type == ESignalRoomType::Storage
+            || Type == ESignalRoomType::PowerRoom
+            || Type == ESignalRoomType::Lab;
+    }
+
+    static bool IsMainPathRoom(ESignalRoomType Type)
+    {
+        return Type == ESignalRoomType::Start
+            || Type == ESignalRoomType::Corridor
+            || Type == ESignalRoomType::Objective;
+    }
 
 protected:
     virtual void BeginPlay() override;
@@ -42,6 +57,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Generator")
     int32 Seed = 12345;
 
+
 private:
     // 그리드 전체 데이터
     UPROPERTY()
@@ -62,6 +78,9 @@ private:
 
     // 실제 방 Actor 스폰
     void SpawnRooms();
+
+    // 사이드 룸과 연결된 복도의 방향 구하기
+    ESignalDoorDirection GetEntranceDirectionForSideRoom(const FSignalRoomCell& Cell) const;
 
     // (X, Y)에 해당하는 Cell 포인터 반환 (범위 밖이면 nullptr)
     FSignalRoomCell* GetCell(int32 X, int32 Y);
