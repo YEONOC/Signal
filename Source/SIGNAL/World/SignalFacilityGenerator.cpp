@@ -228,7 +228,7 @@ void ASignalFacilityGenerator::SpawnRooms()
         const bool bIsSingleEntranceRoom =
             (Cell.RoomType == ESignalRoomType::Storage ||
                 Cell.RoomType == ESignalRoomType::PowerRoom ||
-                Cell.RoomType == ESignalRoomType::Lab);
+                Cell.RoomType == ESignalRoomType::Objective);
 
         if (bIsSingleEntranceRoom)
         {
@@ -261,7 +261,7 @@ void ASignalFacilityGenerator::SpawnRooms()
         const bool bUsesDoorConfig =
             (Cell.RoomType == ESignalRoomType::Start ||
                 Cell.RoomType == ESignalRoomType::Corridor ||
-                Cell.RoomType == ESignalRoomType::Objective);
+                Cell.RoomType == ESignalRoomType::Lab);
 
         if (bUsesDoorConfig)
         {
