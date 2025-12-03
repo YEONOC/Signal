@@ -16,17 +16,13 @@ struct SIGNAL_API FSignalRoomArchetype
     GENERATED_BODY()
 
 public:
-    // 이 Archetype이 대응하는 룸 타입
+    // 어떤 RoomType에 대한 설정인지
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
     ESignalRoomType RoomType = ESignalRoomType::Empty;
 
-    // 이 타입에서 사용할 수 있는 룸 BP 후보들
+    // 이 RoomType을 생성할 때 랜덤으로 선택할 Room Blueprint들
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
     TArray<TSubclassOf<AActor>> RoomBlueprints;
-
-    //  단일 입구 옵션
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    bool bIsSingleEntranceRoom = false;   // Storage/Power/Lab 같은 애들
 };
 
 /**

@@ -225,7 +225,10 @@ void ASignalFacilityGenerator::SpawnRooms()
         FRotator SpawnRotation = FRotator::ZeroRotator;
 
         // 단일 입구 방이면 회전만 맞춰서 넣는 전략
-        const bool bIsSingleEntranceRoom = Archetype->bIsSingleEntranceRoom;
+        const bool bIsSingleEntranceRoom =
+            (Cell.RoomType == ESignalRoomType::Storage ||
+                Cell.RoomType == ESignalRoomType::PowerRoom ||
+                Cell.RoomType == ESignalRoomType::Objective);
 
         if (bIsSingleEntranceRoom)
         {
@@ -255,7 +258,11 @@ void ASignalFacilityGenerator::SpawnRooms()
         AActor* Spawned = World->SpawnActor<AActor>(RoomClass, SpawnLocation, SpawnRotation);
 
         // Start / Corridor / Objective 같은 "문 위치 유동" 타입은 ApplyDoorConfig 사용
-        const bool bUsesDoorConfig = !(Archetype->bIsSingleEntranceRoom);
+        const bool bUsesDoorConfig =
+            (Cell.RoomType == ESignalRoomType::Start ||
+                Cell.RoomType == ESignalRoomType::Corridor ||
+                Cell.RoomType == ESignalRoomType::Lab);
+
         if (bUsesDoorConfig)
         {
             if (ASignalRoomBase* RoomBase = Cast<ASignalRoomBase>(Spawned))
