@@ -15,9 +15,18 @@ class ASIGNALGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+    /** Constructor */
+    ASIGNALGameMode();
+
+public:
+
+    // 이 스테이지에서 사용할 설정
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
+    TObjectPtr<class USignalStageConfig> DefaultStageConfig;
+
+    virtual void BeginPlay() override;
+
 	
-	/** Constructor */
-	ASIGNALGameMode();
 };
 
 
