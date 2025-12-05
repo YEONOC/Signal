@@ -6,6 +6,8 @@
 #include "Engine/DataAsset.h"
 #include "SignalStageConfig.generated.h"
 
+class USignalItemSet;
+
 UCLASS(BlueprintType)
 class SIGNAL_API USignalStageConfig : public UDataAsset
 {
@@ -32,10 +34,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Signal")
     int32 BonusSignalTarget = 150;
 
-    // 나중에 EnemySet / ItemSet 같은 것도 여기 연결 가능
-    // UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
-    // TObjectPtr<USignalEnemySet> EnemySet;
-    //
-    // UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
-    // TObjectPtr<USignalItemSet> ItemSet;
+     /*나중에 EnemySet / ItemSet 같은 것도 여기 연결 가능
+     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
+     TObjectPtr<USignalEnemySet> EnemySet;*/
+    
+     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
+     TObjectPtr<USignalItemSet> ItemSet;
 };

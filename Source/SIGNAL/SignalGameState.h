@@ -19,22 +19,6 @@ class SIGNAL_API ASignalGameState : public AGameStateBase
 public:
     ASignalGameState();
 
-    // 현재 플레이 중인 스테이지 설정
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
-    TObjectPtr<USignalStageConfig> StageConfig;
-
-    // 현재까지 모은 신호량
-    UPROPERTY(BlueprintReadOnly, Category = "Signal")
-    int32 CurrentSignal;
-
-    // 신호량이 변경될 때 브로드캐스트 (HUD 연동용)
-    UPROPERTY(BlueprintAssignable, Category = "Signal")
-    FOnSignalAmountChanged OnSignalAmountChanged;
-
-    // 클리어 시 브로드캐스트 (GameMode/HUD에서 받기)
-    UPROPERTY(BlueprintAssignable, Category = "Signal")
-    FOnStageCleared OnStageCleared;
-
     // 신호 초기화 (게임 시작 시 호출)
     UFUNCTION(BlueprintCallable, Category = "Signal")
     void InitializeSignalFromStage();
@@ -56,5 +40,22 @@ public:
 
 protected:
     void HandleStageCleared();
+
+public:
+    // 현재 플레이 중인 스테이지 설정
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
+    TObjectPtr<USignalStageConfig> StageConfig;
+
+    // 현재까지 모은 신호량
+    UPROPERTY(BlueprintReadOnly, Category = "Signal")
+    int32 CurrentSignal;
+
+    // 신호량이 변경될 때 브로드캐스트 (HUD 연동용)
+    UPROPERTY(BlueprintAssignable, Category = "Signal")
+    FOnSignalAmountChanged OnSignalAmountChanged;
+
+    // 클리어 시 브로드캐스트 (GameMode/HUD에서 받기)
+    UPROPERTY(BlueprintAssignable, Category = "Signal")
+    FOnStageCleared OnStageCleared;
 };
 

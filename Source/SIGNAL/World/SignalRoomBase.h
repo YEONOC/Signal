@@ -17,8 +17,23 @@ class SIGNAL_API ASignalRoomBase : public AActor
 public:
     ASignalRoomBase();
 
+    virtual void BeginPlay() override;
+
     // 방의 문 상태를 적용해달라는 요청
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Room")
     void ApplyDoorConfig(const FSignalRoomDoors& Doors);
     virtual void ApplyDoorConfig_Implementation(const FSignalRoomDoors& Doors);
+
+public:
+    // 이 Room이 어떤 RoomType인지 (Spawn 이후 Cell에서 세팅해줘도 됨)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room")
+    ESignalRoomType RoomType = ESignalRoomType::Empty;
+
+    // 아이템 스폰 포인트들 (BP에서 Arrow/SceneComponent들을 등록)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawns")
+    TArray<USceneComponent*> ItemSpawnPoints;
+
+    // 적 스폰 포인트들
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawns")
+    TArray<USceneComponent*> EnemySpawnPoints;
 };

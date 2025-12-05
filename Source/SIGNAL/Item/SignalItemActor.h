@@ -28,6 +28,9 @@ public:
     int32 GetSignalGrade() const { return SignalGrade; }
 
 protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+    TObjectPtr<class UStaticMeshComponent> StaticMeshComp;
+
     // 추출 상호작용 범위 확인용 콜리전
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<USphereComponent> InteractionTrigger;

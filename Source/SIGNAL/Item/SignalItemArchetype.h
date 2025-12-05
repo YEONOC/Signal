@@ -21,6 +21,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TSubclassOf<AActor> ItemClass;
 
+    // 비주얼
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UStaticMesh> Mesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+    TObjectPtr<UMaterialInterface> OverrideMaterial;
+
     // 이 아이템에서 추출 가능한 신호량 범위
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Signal")
     int32 SignalYieldMin = 5;

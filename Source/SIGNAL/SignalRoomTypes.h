@@ -89,4 +89,8 @@ struct FSignalRoomCell
     // 이 셀에서 어느 방향으로 문이 열려 있는지
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FSignalRoomDoors Doors;
+
+    // 실제 스폰된 Room Actor (디버그 & 스폰 포인트 수집용)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    TWeakObjectPtr<AActor> SpawnedRoomActor;
 };

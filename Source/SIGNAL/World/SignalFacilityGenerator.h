@@ -2,9 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SignalRoomSet.h"
 #include "SignalRoomTypes.h"
-#include "World/SignalRoomSet.h"
 #include "SignalFacilityGenerator.generated.h"
+
+struct FSignalItemSpawnPoint;
+struct FSignalEnemySpawnPoint;
 
 /**
  * 프로시저럴 시설(던전) 생성기 액터
@@ -58,13 +61,17 @@ public:
     int32 Seed = 82371;
 
 
-private:
+protected:
     // 그리드 전체 데이터
     UPROPERTY()
     TArray<FSignalRoomCell> Grid;
 
     // 내부에서 사용할 랜덤 스트림
     FRandomStream RandomStream;
+
+    // 아이템/적 스폰 포인트들
+    TArray<FSignalItemSpawnPoint> ItemSpawnPoints;
+    TArray<FSignalEnemySpawnPoint> EnemySpawnPoints;
 
 private:
     // 레이아웃 생성: RoomType 배치
@@ -85,4 +92,9 @@ private:
     // (X, Y)에 해당하는 Cell 포인터 반환 (범위 밖이면 nullptr)
     FSignalRoomCell* GetCell(int32 X, int32 Y);
     const FSignalRoomCell* GetCell(int32 X, int32 Y) const;
+
+    // Item / Enemy 스폰 포인트 수집 및 분배
+    void CollectSpawnPoints();
+    void DistributeAndSpawnItems();
+    void DistributeAndSpawnEnemies();
 };

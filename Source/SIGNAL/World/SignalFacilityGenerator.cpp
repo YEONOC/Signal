@@ -1,7 +1,15 @@
 
 #include "SignalFacilityGenerator.h"
+// Room 생성
 #include "Engine/World.h"
 #include "SignalRoomBase.h"
+// 아이템 및 적 생성
+#include "SignalSpawnPoint.h"
+#include "SignalGameState.h"
+#include "GamePlay/SignalStageConfig.h"
+#include "Item/SignalItemActor.h"
+#include "Item/SignalItemArchetype.h"
+#include "Item/SignalItemSet.h"
 
 // Sets default values
 ASignalFacilityGenerator::ASignalFacilityGenerator()
@@ -76,7 +84,13 @@ void ASignalFacilityGenerator::BeginPlay()
     // 2) 실제 Room Actor 스폰
     SpawnRooms();
 
+    // 3) 스폰 포인트 수집 & 분배
+    CollectSpawnPoints();
+    DistributeAndSpawnItems();
+    DistributeAndSpawnEnemies();
+
     DebugLogGridLayout();
+
 }
 
 /**
@@ -189,16 +203,13 @@ void ASignalFacilityGenerator::SpawnRooms()
 
     UWorld* World = GetWorld();
     if (!World)
-    {
         return;
-    }
 
-    for (const FSignalRoomCell& Cell : Grid)
+    for (FSignalRoomCell& Cell : Grid)
     {
         if (Cell.RoomType == ESignalRoomType::Empty)
-        {
             continue;
-        }
+
 
         const FSignalRoomArchetype* Archetype = RoomSet->FindArchetype(Cell.RoomType);
         if (!Archetype || Archetype->RoomBlueprints.Num() == 0)
@@ -211,9 +222,7 @@ void ASignalFacilityGenerator::SpawnRooms()
         const int32 Index = RandomStream.RandRange(0, Archetype->RoomBlueprints.Num() - 1);
         TSubclassOf<AActor> RoomClass = Archetype->RoomBlueprints[Index];
         if (!*RoomClass)
-        {
             continue;
-        }
 
         const FVector SpawnLocation = GetActorLocation() + FVector(
             Cell.X * CellSize,
@@ -253,6 +262,11 @@ void ASignalFacilityGenerator::SpawnRooms()
         }
 
         AActor* Spawned = World->SpawnActor<AActor>(RoomClass, SpawnLocation, SpawnRotation);
+        if (!Spawned)
+            continue;
+
+        // 스폰된 Room Actor를 Cell에 저장 (디버그 & 스폰 포인트 수집 용도)
+        Cell.SpawnedRoomActor = Spawned;
 
         // Start / Corridor / Objective 같은 "문 위치 유동" 타입은 ApplyDoorConfig 사용
         const bool bUsesDoorConfig = !(Archetype->bIsSingleEntranceRoom);
@@ -275,36 +289,28 @@ ESignalDoorDirection ASignalFacilityGenerator::GetEntranceDirectionForSideRoom(c
     if (const FSignalRoomCell* N = GetCell(X, Y + 1))
     {
         if (N->RoomType == ESignalRoomType::Corridor)
-        {
             return ESignalDoorDirection::North;
-        }
     }
 
     // 왼쪽(+X)이 Corridor면 West
     if (const FSignalRoomCell* E = GetCell(X + 1, Y))
     {
         if (E->RoomType == ESignalRoomType::Corridor)
-        {
             return ESignalDoorDirection::West;
-        }
     }
 
     // 아래쪽(-Y)이 Corridor면 South
     if (const FSignalRoomCell* S = GetCell(X, Y - 1))
     {
         if (S->RoomType == ESignalRoomType::Corridor)
-        {
             return ESignalDoorDirection::South;
-        }
     }
 
     // 오른쪽(-X)이 Corridor면 East
     if (const FSignalRoomCell* W = GetCell(X - 1, Y))
     {
         if (W->RoomType == ESignalRoomType::Corridor)
-        {
             return ESignalDoorDirection::East;
-        }
     }
 
     // 못 찾으면 None
@@ -385,9 +391,7 @@ void ASignalFacilityGenerator::BuildDoorConnections()
 FSignalRoomCell* ASignalFacilityGenerator::GetCell(int32 X, int32 Y)
 {
     if (X < 0 || X >= GridWidth || Y < 0 || Y >= GridHeight)
-    {
         return nullptr;
-    }
 
     return &Grid[Y * GridWidth + X];
 }
@@ -395,9 +399,162 @@ FSignalRoomCell* ASignalFacilityGenerator::GetCell(int32 X, int32 Y)
 const FSignalRoomCell* ASignalFacilityGenerator::GetCell(int32 X, int32 Y) const
 {
     if (X < 0 || X >= GridWidth || Y < 0 || Y >= GridHeight)
-    {
         return nullptr;
-    }
 
     return &Grid[Y * GridWidth + X];
+}
+
+void ASignalFacilityGenerator::CollectSpawnPoints()
+{
+    ItemSpawnPoints.Empty();
+    EnemySpawnPoints.Empty();
+
+    for (const FSignalRoomCell& Cell : Grid)
+    {
+        if (Cell.RoomType == ESignalRoomType::Empty)
+            continue;
+
+        AActor* RoomActor = Cell.SpawnedRoomActor.Get();
+        if (!RoomActor)
+            continue;
+
+
+        ASignalRoomBase* RoomBase = Cast<ASignalRoomBase>(RoomActor);
+        if (!RoomBase)
+            continue;
+      
+        // 아이템 포인트 수집
+        for (USceneComponent* Comp : RoomBase->ItemSpawnPoints)
+        {
+            if (!Comp) continue;
+
+            FSignalItemSpawnPoint SP;
+            SP.RoomType = Cell.RoomType;
+            SP.WorldLocation = Comp->GetComponentLocation();
+            SP.OwnerRoom = RoomActor;
+            SP.PointComponent = Comp;
+
+            ItemSpawnPoints.Add(SP);
+        }
+
+        // 적 포인트 수집
+        for (USceneComponent* Comp : RoomBase->EnemySpawnPoints)
+        {
+            if (!Comp) continue;
+
+            FSignalEnemySpawnPoint SP;
+            SP.RoomType = Cell.RoomType;
+            SP.WorldLocation = Comp->GetComponentLocation();
+            SP.OwnerRoom = RoomActor;
+            SP.PointComponent = Comp;
+
+            EnemySpawnPoints.Add(SP);
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("CollectSpawnPoints: Items=%d, Enemies=%d"),
+        ItemSpawnPoints.Num(), EnemySpawnPoints.Num());
+}
+
+void ASignalFacilityGenerator::DistributeAndSpawnItems()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+        return;
+
+    ASignalGameState* GS = World->GetGameState<ASignalGameState>();
+    if (!GS || !GS->StageConfig)
+        return;
+
+    USignalItemSet* ItemSet = GS->StageConfig->ItemSet;
+    if (!ItemSet || ItemSet->Items.Num() == 0)
+        return;
+
+    // 1) 목표 신호량 계산
+    const int32 RequiredSignal = GS->StageConfig->RequiredSignal;
+    // 맵 전체 신호량은 목표의 1.5~2배 정도를 제공 (여유)
+    int32 TargetTotalSignal = static_cast<int32>(RequiredSignal * 1.7f);
+
+    // 2) 스폰 포인트 셔플 (랜덤 순서로 처리)
+    TArray<FSignalItemSpawnPoint> ShuffledPoints = ItemSpawnPoints;
+    for (int32 i = 0; i < ShuffledPoints.Num(); ++i)
+    {
+        int32 SwapIdx = RandomStream.RandRange(0, ShuffledPoints.Num() - 1);
+        ShuffledPoints.Swap(i, SwapIdx);
+    }
+
+    // 3) 스폰 루프
+    for (const FSignalItemSpawnPoint& SP : ShuffledPoints)
+    {
+        if (TargetTotalSignal <= 0)
+            break;
+
+        // 이 방(RoomType)에 어울리는 아이템 후보 필터
+        TArray<const FSignalItemArchetype*> Candidates;
+
+        for (const FSignalItemArchetype& Item : ItemSet->Items)
+        {
+            if (Item.PreferredRooms.Num() == 0 || Item.PreferredRooms.Contains(SP.RoomType))
+            {
+                Candidates.Add(&Item);
+            }
+        }
+
+        if (Candidates.Num() == 0)
+            continue;
+        
+
+        // 가중치(SpawnWeight) 기반 랜덤 선택
+        int32 TotalWeight = 0;
+        for (const FSignalItemArchetype* Item : Candidates)
+        {
+            TotalWeight += FMath::Max(Item->SpawnWeight, 1);
+        }
+
+        int32 R = RandomStream.RandRange(1, TotalWeight);
+        const FSignalItemArchetype* ChosenItem = nullptr;
+
+        for (const FSignalItemArchetype* Item : Candidates)
+        {
+            int32 W = FMath::Max(Item->SpawnWeight, 1);
+            if (R <= W)
+            {
+                ChosenItem = Item;
+                break;
+            }
+            R -= W;
+        }
+
+        if (!ChosenItem || !ChosenItem->ItemClass)
+            continue;
+
+        // 아이템 스폰
+        FActorSpawnParameters Params;
+        Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+        AActor* SpawnedItem = World->SpawnActor<AActor>(
+            ChosenItem->ItemClass,
+            SP.WorldLocation,
+            FRotator::ZeroRotator,
+            Params
+        );
+
+        if (ASignalItemActor* ItemActor = Cast<ASignalItemActor>(SpawnedItem))
+        {
+            ItemActor->InitializeFromArchetype(*ChosenItem);
+
+            // 이 아이템이 기여할 평균 신호량만큼 TargetTotalSignal 감소
+            const int32 AvgSignal = (ChosenItem->SignalYieldMin + ChosenItem->SignalYieldMax) / 2;
+            TargetTotalSignal -= AvgSignal;
+        }
+        UE_LOG(LogTemp, Log, TEXT("Spawn Item Location : (%d, %d)"), (int32)SP.WorldLocation.X, (int32)SP.WorldLocation.Y);
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("DistributeAndSpawnItems: Remaining TargetSignal=%d"), TargetTotalSignal);
+
+}
+
+void ASignalFacilityGenerator::DistributeAndSpawnEnemies()
+{
+    // 추후 추가
 }

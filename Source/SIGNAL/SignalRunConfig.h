@@ -23,9 +23,9 @@ struct FSignalRunConfig
     UPROPERTY(EditAnywhere)
     int32 BonusSignalTarget;  // 이 이상 모으면 추가 보상 조건
 
-    //UPROPERTY(EditAnywhere)
-    //TSubclassOf<USignalEnemySet> EnemySet; // 이 맵에서 사용할 적 풀
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<USignalItemSet> ItemSet;   // 이 맵에서 사용할 아이템 풀
 
     //UPROPERTY(EditAnywhere)
-    //TSubclassOf<USignalItemSet> ItemSet;   // 이 맵에서 사용할 아이템 풀
+    //TSubclassOf<USignalEnemySet> EnemySet; // 이 맵에서 사용할 적 풀
 };
