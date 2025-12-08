@@ -3,6 +3,7 @@
 #include "SignalItemActor.h"
 #include "GameFramework/Actor.h"
 #include "SignalItemArchetype.h"
+#include "Compo/ScanHighlightComponent.h"
 #include "Components/SphereComponent.h"
 
 ASignalItemActor::ASignalItemActor()
@@ -18,7 +19,17 @@ ASignalItemActor::ASignalItemActor()
 
     InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTrigger"));
     InteractionTrigger->InitSphereRadius(60.f);
+
+    ScanHighlight = CreateDefaultSubobject<UScanHighlightComponent>(TEXT("ScanHighlight"));
 }
+
+
+void ASignalItemActor::BeginPlay()
+{
+    Super::BeginPlay();
+ 
+}
+
 
 void ASignalItemActor::InitializeFromArchetype(const FSignalItemArchetype& Data)
 {
@@ -37,6 +48,8 @@ void ASignalItemActor::InitializeFromArchetype(const FSignalItemArchetype& Data)
     {
         StaticMeshComp->SetMaterial(0, Data.OverrideMaterial);
     }
+
+    ScanHighlight->SignalGrade = SignalGrade;
 }
 
 int32 ASignalItemActor::GetRandomSignalYield() const

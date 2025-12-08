@@ -28,6 +28,13 @@ public:
     int32 GetSignalGrade() const { return SignalGrade; }
 
 protected:
+    virtual void BeginPlay() override;
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scan")
+    TObjectPtr<class UScanHighlightComponent> ScanHighlight;
+
+protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
     TObjectPtr<class UStaticMeshComponent> StaticMeshComp;
 

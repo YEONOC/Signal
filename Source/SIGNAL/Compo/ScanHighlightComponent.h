@@ -28,7 +28,7 @@ private:
 
 public:
     UPROPERTY(EditAnywhere, Category = "Scan")
-    int32 HazardLevel = 0; // 0~3 정도
+    int32 SignalGrade = 0; // 0~3 정도
 
 protected:
     // 하이라이트에 쓸 Stencil 값 (머티리얼에서 이 값으로 필터링할 수도 있음)

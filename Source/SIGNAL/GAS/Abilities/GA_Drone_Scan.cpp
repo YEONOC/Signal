@@ -99,7 +99,7 @@ void UGA_Drone_Scan::ActivateAbility(
             if (UScanHighlightComponent* HighlightComp = HitActor->FindComponentByClass<UScanHighlightComponent>())
             {
                 // HazardLevel 읽어오기
-                int32 Hazard = HighlightComp->HazardLevel;
+                int32 Hazard = HighlightComp->SignalGrade;
 
                 HighlightComp->HighlightForScan(2.0f);
 

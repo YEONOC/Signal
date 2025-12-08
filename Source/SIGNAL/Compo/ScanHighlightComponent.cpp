@@ -22,10 +22,10 @@ void UScanHighlightComponent::BeginPlay()
         Owner->GetComponents<UMeshComponent>(MeshComponents);
     }
 
-    // HazardLevel에 따라 Stencil 고정
+    // SignalGrade에 따라 Stencil 고정
     int32 Stencil = 1; // 기본값 = 안전(초록)
 
-    switch (HazardLevel)
+    switch (SignalGrade)
     {
         case 0: Stencil = 1; break; // Green
         case 1: Stencil = 2; break; // Yellow
