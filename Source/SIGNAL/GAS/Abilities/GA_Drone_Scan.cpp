@@ -109,14 +109,12 @@ void UGA_Drone_Scan::ActivateAbility(
             }
 
             // 디버그용 스피어
-            DrawDebugSphere(World, HitActor->GetActorLocation(), 50.f, 12, FColor::Green, false, 1.0f);
+            // DrawDebugSphere(World, HitActor->GetActorLocation(), 50.f, 12, FColor::Green, false, 1.0f);
         }
     }
 
     // 디버그: 전체 스캔 범위 표시
-    DrawDebugSphere(World, Origin, ScanRadius, 32,
-        bFoundInteresting ? FColor::Green : FColor::Red,
-        false, 1.0f);
+    // DrawDebugSphere(World, Origin, ScanRadius, 32, bFoundInteresting ? FColor::Green : FColor::Red, false, 1.0f);
 
     // 배터리 즉시 소모
     if (Drone->BatteryDeltaEffect && AttrSet)

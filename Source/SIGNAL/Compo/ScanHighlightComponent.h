@@ -19,6 +19,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Scan")
     void HighlightForScan(float Duration);
 
+    // Spawn 후 Signal Grade 값에 따라 Stencil 값 설정
+    void SetSignalGrade(int32 Grade);
+
 protected:
     virtual void BeginPlay() override;
 

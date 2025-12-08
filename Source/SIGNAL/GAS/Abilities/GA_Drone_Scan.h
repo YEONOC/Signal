@@ -25,6 +25,7 @@ protected:
         const FGameplayEventData* TriggerEventData
     ) override;
 
+protected:
     // 스캔 반경, 배터리 소모량 등
     UPROPERTY(EditDefaultsOnly, Category = "Scan")
     float ScanRadius = 800.f;

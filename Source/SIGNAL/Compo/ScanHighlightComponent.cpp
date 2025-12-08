@@ -29,8 +29,8 @@ void UScanHighlightComponent::BeginPlay()
     {
         case 0: Stencil = 1; break; // Green
         case 1: Stencil = 2; break; // Yellow
-        case 2: Stencil = 3; break; // Red
-        case 3: Stencil = 4; break; // Purple
+        case 2: Stencil = 3; break; // Purple
+        case 3: Stencil = 4; break; // Red (Enemy)
     }
     StencilValue = Stencil;
 
@@ -64,6 +64,22 @@ void UScanHighlightComponent::HighlightForScan(float Duration)
             false
         );
     }
+}
+
+void UScanHighlightComponent::SetSignalGrade(int32 Grade)
+{
+    // SignalGrade에 따라 Stencil 고정
+    int32 Stencil = 1; // 기본값 = 안전(초록)
+    SignalGrade = Grade;
+
+    switch (SignalGrade)
+    {
+    case 0: Stencil = 1; break; // Green
+    case 1: Stencil = 2; break; // Yellow
+    case 2: Stencil = 3; break; // Purple
+    case 3: Stencil = 4; break; // Red (Enemy)
+    }
+    StencilValue = Stencil;
 }
 
 void UScanHighlightComponent::SetHighlighted(bool bEnabled)

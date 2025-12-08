@@ -49,7 +49,7 @@ void ASignalItemActor::InitializeFromArchetype(const FSignalItemArchetype& Data)
         StaticMeshComp->SetMaterial(0, Data.OverrideMaterial);
     }
 
-    ScanHighlight->SignalGrade = SignalGrade;
+    ScanHighlight->SetSignalGrade(SignalGrade);
 }
 
 int32 ASignalItemActor::GetRandomSignalYield() const
