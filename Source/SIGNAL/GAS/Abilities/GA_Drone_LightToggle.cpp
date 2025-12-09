@@ -11,10 +11,7 @@ UGA_Drone_LightToggle::UGA_Drone_LightToggle()
 {
     const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
-    UE_LOG(LogTemp, Warning, TEXT("LightToggle ctor Tag valid? %s"),
-        SignalTags.Ability_Drone_LightToggle.IsValid() ? TEXT("true") : TEXT("false"));
-
-    AbilityInputTag = SignalTags.Ability_Drone_LightToggle;
+    AbilityInputTag = SignalTags.Input_Drone_LightToggle;
     AbilityTags.AddTag(SignalTags.Ability_Drone_LightToggle);
 }
 

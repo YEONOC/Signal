@@ -59,6 +59,8 @@ protected:
 
 	void LightToggleInput(const FInputActionValue& Value);
     void ScanInput(const FInputActionValue& Value);
+    void ExtractInput_Pressed(const FInputActionValue& Value);
+    void ExtractInput_Released(const FInputActionValue& Value);
 
 private:
     UPROPERTY()

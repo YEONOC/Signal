@@ -13,7 +13,7 @@ class SIGNAL_API USignalGameplayAbility : public UGameplayAbility
 public:
     USignalGameplayAbility();
 
-    /** 이 Ability의 입력 태그 (예: Ability.Drone.LightToggle) */
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    /** 이 Ability의 입력 태그 (Input_Drone_XXX) */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Signal | Input")
     FGameplayTag AbilityInputTag;
 };

@@ -52,6 +52,20 @@ void ASignalItemActor::InitializeFromArchetype(const FSignalItemArchetype& Data)
     ScanHighlight->SetSignalGrade(SignalGrade);
 }
 
+int32 ASignalItemActor::ExtractSignal()
+{
+    if (bExtracted)
+        return 0;
+
+    bExtracted = true;
+
+    const int SignalAmount = FMath::RandRange(SignalYieldMin, SignalYieldMax);
+    
+    Destroy();
+
+    return SignalAmount;
+}
+
 int32 ASignalItemActor::GetRandomSignalYield() const
 {
     return FMath::RandRange(SignalYieldMin, SignalYieldMax);

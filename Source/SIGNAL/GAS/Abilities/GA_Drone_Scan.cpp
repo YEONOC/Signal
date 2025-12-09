@@ -14,10 +14,8 @@ UGA_Drone_Scan::UGA_Drone_Scan()
 {
     const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
-    AbilityInputTag = SignalTags.Ability_Drone_Scan;
+    AbilityInputTag = SignalTags.Input_Drone_Scan;
     AbilityTags.AddTag(SignalTags.Ability_Drone_Scan);
-
-    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 void UGA_Drone_Scan::ActivateAbility(

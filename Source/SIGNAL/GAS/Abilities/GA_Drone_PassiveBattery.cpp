@@ -12,8 +12,8 @@
 
 UGA_Drone_PassiveBattery::UGA_Drone_PassiveBattery()
 {
-    const FSignalGameplayTags& Tags = FSignalGameplayTags::Get();
-    AbilityTags.AddTag(Tags.Ability_Drone_PassiveBattery);
+    const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
+    AbilityTags.AddTag(SignalTags.Ability_Drone_PassiveBattery);
     InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
     NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }

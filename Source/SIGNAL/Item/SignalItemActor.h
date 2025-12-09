@@ -20,6 +20,10 @@ public:
     // 아이템 정보(아키타입) 세팅
     void InitializeFromArchetype(const FSignalItemArchetype& Data);
 
+    // 정보 추출
+    UFUNCTION(BlueprintCallable, Category = "Signal")
+    int32 ExtractSignal();
+
     // 추출 가능한 신호량을 반환
     int32 GetRandomSignalYield() const;
 
@@ -57,5 +61,9 @@ protected:
 
     UPROPERTY()
     int32 SignalGrade;
+
+    // 중복 추출 방지용
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Signal")
+    bool bExtracted = false;
 };
 

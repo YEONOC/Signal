@@ -34,3 +34,27 @@ bool USignalAbilitySystemComponent::TryActivateAbilitiesByInputTag(const FGamepl
 
     return bActivatedAny;
 }
+
+void USignalAbilitySystemComponent::CancelAbilitiesByInputTag(const FGameplayTag& InputTag)
+{
+    if (!InputTag.IsValid())
+    {
+        return;
+    }
+
+    for (FGameplayAbilitySpec& Spec : GetActivatableAbilities())
+    {
+        USignalGameplayAbility* SignalAbility = Cast<USignalGameplayAbility>(Spec.Ability);
+        if (!SignalAbility)
+        {
+            continue;
+        }
+
+        // 이 어빌리티가 어떤 InputTag에 묶여 있는지 검사
+        if (SignalAbility->AbilityInputTag == InputTag)
+        {
+            // 이 스펙으로 활성화된 인스턴스들 취소
+            CancelAbilityHandle(Spec.Handle);
+        }
+    }
+}

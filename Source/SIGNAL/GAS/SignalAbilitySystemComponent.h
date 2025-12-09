@@ -17,4 +17,5 @@ class SIGNAL_API USignalAbilitySystemComponent : public UAbilitySystemComponent
 public:
     // 입력 태그로 Ability 실행
     bool TryActivateAbilitiesByInputTag(const FGameplayTag& InputTag);
+    void CancelAbilitiesByInputTag(const FGameplayTag& InputTag);
 };
