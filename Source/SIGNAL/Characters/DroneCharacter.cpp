@@ -35,6 +35,8 @@ ADroneCharacter::ADroneCharacter()
 	}
 
 	bUseControllerRotationYaw = true;
+	// 위/아래 회전도 카메라(컨트롤러) 따라가기
+	bUseControllerRotationPitch = true;
 }
 
 // Called when the game starts or when spawned
@@ -58,6 +60,15 @@ void ADroneCharacter::BeginPlay()
 void ADroneCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (Controller)
+	{
+		FRotator ControlRot = Controller->GetControlRotation();
+
+		// Roll은 0으로 두고, Pitch/Yaw만 따라가게
+		FRotator NewRot(ControlRot.Pitch, ControlRot.Yaw, 0.f);
+		SetActorRotation(NewRot);
+	}
 
 	// 메쉬 기준으로만 기울이기 (캡슐은 그대로)
 	USkeletalMeshComponent* MeshComp = GetMesh();
@@ -113,7 +124,28 @@ void ADroneCharacter::HandleMoveInput(const FVector2D& MoveVector)
 
 	// 컨트롤러의 Yaw 기준으로 전/후/좌/우 계산
 	const FRotator ControlRot = Controller->GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
+
+	// 전진/후진 : 카메라가 실제로 바라보는 방향 (Pitch 포함)
+	FVector ForwardDir = ControlRot.Vector();
+	ForwardDir = ForwardDir.GetSafeNormal();
+
+	// 좌/우 이동 : 카메라 Right에서 수평만 사용 (Z=0)
+	FVector RightDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::Y);
+	RightDir.Z = 0.f;
+	RightDir = RightDir.GetSafeNormal();
+
+	if (!ForwardDir.IsNearlyZero() && MoveVector.Y != 0.f)
+	{
+		AddMovementInput(ForwardDir, MoveVector.Y);
+	}
+
+	if (!RightDir.IsNearlyZero() && MoveVector.X != 0.f)
+	{
+		AddMovementInput(RightDir, MoveVector.X);
+	}
+
+	// 이전 버전 : 상승 하강 조작 버전
+	/*const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
 
 	const FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
@@ -125,7 +157,7 @@ void ADroneCharacter::HandleMoveInput(const FVector2D& MoveVector)
 	if (!FMath::IsNearlyZero(MoveVector.X))
 	{
 		AddMovementInput(RightDir, MoveVector.X);
-	}
+	}*/
 }
 
 void ADroneCharacter::HandleUpDownInput(float Value)

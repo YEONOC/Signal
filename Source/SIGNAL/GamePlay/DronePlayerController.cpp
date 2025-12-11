@@ -86,8 +86,8 @@ void ADronePlayerController::SetupInputComponent()
         );
     }
 
-    // 상승/하강
-    if (IA_UpDown)
+    // 상승/하강 -> 더이상 사용 X
+    /*if (IA_UpDown)
     {
         EnhancedInput->BindAction(
             IA_UpDown,
@@ -95,7 +95,7 @@ void ADronePlayerController::SetupInputComponent()
             this,
             &ADronePlayerController::UpDownInput
         );
-    }
+    }*/
 
     // 정지
     if (IA_Stop)
@@ -179,15 +179,16 @@ void ADronePlayerController::LookInput(const FInputActionValue& Value)
 
 }
 
-void ADronePlayerController::UpDownInput(const FInputActionValue& Value)
-{
-    const float Axis = Value.Get<float>();
-
-    if (ADroneCharacter* Drone = Cast<ADroneCharacter>(GetPawn()))
-    {
-        Drone->HandleUpDownInput(Axis);
-    }
-}
+// 더이상 사용 X
+//void ADronePlayerController::UpDownInput(const FInputActionValue& Value)
+//{
+//    const float Axis = Value.Get<float>();
+//
+//    if (ADroneCharacter* Drone = Cast<ADroneCharacter>(GetPawn()))
+//    {
+//        Drone->HandleUpDownInput(Axis);
+//    }
+//}
 
 void ADronePlayerController::StopInput(const FInputActionValue& Value)
 {
