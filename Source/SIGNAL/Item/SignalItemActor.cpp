@@ -14,8 +14,10 @@ ASignalItemActor::ASignalItemActor()
     StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
     RootComponent = StaticMeshComp;
 
-    StaticMeshComp->SetCollisionProfileName(TEXT("BlockAll"));
-    StaticMeshComp->SetGenerateOverlapEvents(true);
+    StaticMeshComp->SetCollisionObjectType(ECC_GameTraceChannel1);
+
+    // StaticMeshComp->SetCollisionProfileName(TEXT("BlockAll"));
+    // StaticMeshComp->SetGenerateOverlapEvents(true);
 
     InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTrigger"));
     InteractionTrigger->InitSphereRadius(60.f);

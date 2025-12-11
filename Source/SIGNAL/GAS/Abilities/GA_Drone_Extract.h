@@ -6,6 +6,8 @@
 #include "GAS/Abilities/SignalGameplayAbility.h"
 #include "GA_Drone_Extract.generated.h"
 
+#define ECC_SignalItem ECollisionChannel::ECC_GameTraceChannel1
+
 class ASignalItemActor;
 
 /**
@@ -42,6 +44,8 @@ protected:
 
     /** 아이템 찾는 트레이스 */
     ASignalItemActor* FindItemToExtract(const FGameplayAbilityActorInfo* ActorInfo, FHitResult& OutHit) const;
+
+    void DrawDebugExtract(const FGameplayAbilityActorInfo* ActorInfo, ASignalItemActor* Item) const;
 
 protected:
     /** 최대 추출 거리 (라인 트레이스 거리) */

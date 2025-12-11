@@ -6,6 +6,9 @@
 #include "GAS/Abilities/SignalGameplayAbility.h"
 #include "GA_Drone_Scan.generated.h"
 
+#define ECC_SignalItem ECollisionChannel::ECC_GameTraceChannel1
+#define ECC_SignalEnemy ECollisionChannel::ECC_GameTraceChannel2
+
 /**
  * 
  */

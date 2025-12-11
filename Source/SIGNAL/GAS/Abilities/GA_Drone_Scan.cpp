@@ -74,12 +74,15 @@ void UGA_Drone_Scan::ActivateAbility(
     TArray<FOverlapResult> Overlaps;
     FCollisionShape Sphere = FCollisionShape::MakeSphere(ScanRadius);
     FCollisionQueryParams Params(SCENE_QUERY_STAT(DroneScan), false, Drone);
+    FCollisionObjectQueryParams ObjQuery;
+    ObjQuery.AddObjectTypesToQuery(ECC_SignalItem); // Item
+    ObjQuery.AddObjectTypesToQuery(ECC_SignalEnemy); // Enemy
 
-    bool bHitSomething = World->OverlapMultiByChannel(
+    bool bHitSomething = World->OverlapMultiByObjectType(
         Overlaps,
         Origin,
         FQuat::Identity,
-        ECC_Pawn,      // 필요한 채널로 변경 가능
+        ObjQuery,      // 필요한 채널로 변경 가능
         Sphere,
         Params
     );
