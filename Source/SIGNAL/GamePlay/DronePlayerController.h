@@ -23,11 +23,24 @@ class SIGNAL_API ADronePlayerController : public APlayerController
 public:
     ADronePlayerController();
 
+    UDroneHUDWidget* GetDroneHUD() const { return DroneHUD; }
+
 protected:
     virtual void BeginPlay() override;
 
     virtual void SetupInputComponent() override;
 
+    void MoveInput(const FInputActionValue& Value);
+    void LookInput(const FInputActionValue& Value);
+    // void UpDownInput(const FInputActionValue& Value);
+    void StopInput(const FInputActionValue& Value);
+
+    void LightToggleInput(const FInputActionValue& Value);
+    void ScanInput(const FInputActionValue& Value);
+    void ExtractInput_Pressed(const FInputActionValue& Value);
+    void ExtractInput_Released(const FInputActionValue& Value);
+
+protected:
     /** 드론 기본 입력 매핑 컨텍스트 */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
     TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -51,16 +64,7 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UDroneHUDWidget> DroneHUDClass;
-
-    void MoveInput(const FInputActionValue& Value);
-    void LookInput(const FInputActionValue& Value);
-    // void UpDownInput(const FInputActionValue& Value);
-    void StopInput(const FInputActionValue& Value);
-
-	void LightToggleInput(const FInputActionValue& Value);
-    void ScanInput(const FInputActionValue& Value);
-    void ExtractInput_Pressed(const FInputActionValue& Value);
-    void ExtractInput_Released(const FInputActionValue& Value);
+    
 
 private:
     UPROPERTY()

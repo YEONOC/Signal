@@ -22,7 +22,7 @@ void ADronePlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 🔹 Enhanced Input MappingContext 등록
+    // Enhanced Input MappingContext 등록
     if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
@@ -146,7 +146,13 @@ void ADronePlayerController::SetupInputComponent()
                 // 떼는 순간 → 어빌리티 Cancel
                 EnhancedInput->BindAction(
                     ActionEntry.InputAction,
-                    ETriggerEvent::Completed, // 또는 Canceled
+                    ETriggerEvent::Canceled,
+                    this,
+                    &ADronePlayerController::ExtractInput_Released);
+
+                EnhancedInput->BindAction(
+                    ActionEntry.InputAction,
+                    ETriggerEvent::Completed,
                     this,
                     &ADronePlayerController::ExtractInput_Released);
             }

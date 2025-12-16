@@ -1,312 +1,295 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "GAS/Abilities/GA_Drone_Extract.h"
+
 #include "SignalGameplayTags.h"
 #include "AbilitySystemComponent.h"
-#include "Characters/DroneCharacter.h"
+#include "Abilities/Tasks/AbilityTask_WaitDelay.h"
+#include "DrawDebugHelpers.h"
+#include "GamePlay/DronePlayerController.h"
+#include "UI/DroneHUDWidget.h"
+#include "Engine/OverlapResult.h"
 #include "Item/SignalItemActor.h"
 #include "SignalGameState.h"
-#include "DrawDebugHelpers.h"
-#include "Abilities/Tasks/AbilityTask_WaitDelay.h"
+#include "Camera/PlayerCameraManager.h"
+#include "TimerManager.h"
 
 UGA_Drone_Extract::UGA_Drone_Extract()
 {
 	const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
-    AbilityInputTag = SignalTags.Input_Drone_Extract;
+	AbilityInputTag = SignalTags.Input_Drone_Extract;
 	AbilityTags.AddTag(SignalTags.Ability_Drone_Extract);
-
 }
 
 void UGA_Drone_Extract::ActivateAbility(
-	const FGameplayAbilitySpecHandle Handle, 
-	const FGameplayAbilityActorInfo* ActorInfo, 
-	const FGameplayAbilityActivationInfo ActivationInfo, 
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-    if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-    {
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-        return;
-    }
+	if (!ActorInfo || !ActorInfo->AvatarActor.IsValid() ||
+		!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
 
-    if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
-    {
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-        return;
-    }
+	// 중복 방지
+	if (ActiveDelayTask)
+	{
+		ActiveDelayTask->EndTask();
+		ActiveDelayTask = nullptr;
+	}
 
-    FHitResult HitResult;
-    ASignalItemActor* TargetItem = FindItemToExtract(ActorInfo, HitResult);
-    // DrawDebugExtract(ActorInfo, TargetItem);
-    if (!TargetItem)
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("GA_Drone_ExtractSignal: No valid item to extract."));
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-        return;
-    }
+	// HUD 캐싱
+	ADronePlayerController* PC = Cast<ADronePlayerController>(ActorInfo->PlayerController.Get());
+	CachedHUD = PC ? PC->GetDroneHUD() : nullptr;
 
-    CurrentTarget = TargetItem;
-    CurrentExtractTime = TargetItem->GetExtractTime();
-    if (CurrentExtractTime <= 0.f)
-    {
-        CurrentExtractTime = 0.1f; // 최소 안전값
-    }
+	// 타겟 먼저 확보
+	ASignalItemActor* TargetItem = FindItemToExtract(ActorInfo);
+	if (!TargetItem)
+	{
+		if (CachedHUD)
+			CachedHUD->SetExtractState(EExtractHUDState::NoTarget);
 
-    // 채널링: ExtractTime 동안 대기
-    UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, CurrentExtractTime);
-    if (DelayTask)
-    {
-        DelayTask->OnFinish.AddDynamic(this, &UGA_Drone_Extract::OnExtractDelayFinished);
-        DelayTask->ReadyForActivation();
-    }
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
 
-    const int32 SignalAmount = TargetItem->ExtractSignal();
-    if (SignalAmount > 0)
-    {
-        UWorld* World = ActorInfo->AvatarActor->GetWorld();
-        if (World)
-        {
-            if (ASignalGameState* SGS = World->GetGameState<ASignalGameState>())
-            {
-                SGS->AddSignal(SignalAmount);
-                UE_LOG(LogTemp, Log, TEXT("GA_Drone_ExtractSignal: Extracted %d signal."), SignalAmount);
-            }
-        }
+	CurrentTarget = TargetItem;
+	CurrentExtractTime = FMath::Max(TargetItem->GetExtractTime(), 0.1f);
 
-    }
-    else
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("GA_Drone_ExtractSignal: Item already extracted or zero yield."));
-    }
+	// HUD 시작 상태
+	if (CachedHUD)
+	{
+		CachedHUD->SetExtractState(EExtractHUDState::Extracting);
+		CachedHUD->SetExtractProgress(0.f);
+	}
 
-    EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-}
+	ExtractStartTime = GetWorld()->GetTimeSeconds();
 
-void UGA_Drone_Extract::EndAbility(
-    const FGameplayAbilitySpecHandle Handle,
-    const FGameplayAbilityActorInfo* ActorInfo,
-    const FGameplayAbilityActivationInfo ActivationInfo,
-    bool bReplicateEndAbility,
-    bool bWasCancelled)
-{
-    CurrentTarget = nullptr;
-    CurrentExtractTime = 0.f;
+	// 진행률 타이머
+	GetWorld()->GetTimerManager().SetTimer(
+		ProgressTimerHandle,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				if (!IsActive())
+					return;
 
-    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+				if (!CachedHUD || !CurrentTarget.IsValid())
+					return;
+
+				const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo();
+				if (!Info || !Info->AvatarActor.IsValid())
+					return;
+
+				if (bCancelRequested)
+					return;
+
+				AActor* Drone = Info->AvatarActor.Get();
+
+				const float Dist = FVector::Dist(Drone->GetActorLocation(), CurrentTarget->GetActorLocation());
+				
+				// 거리 이탈 시 Cancelled
+				if (Dist > ExtractRadius)
+				{
+					bCancelRequested = true;
+
+					CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+
+					if (UWorld* World = GetWorld())
+					{
+						World->GetTimerManager().ClearTimer(ProgressTimerHandle);
+					}
+
+					CancelAbility(CurrentSpecHandle, Info, CurrentActivationInfo, true);
+					return;
+				}
+
+				const float Now = GetWorld()->GetTimeSeconds();
+				const float Alpha = FMath::Clamp((Now - ExtractStartTime) / CurrentExtractTime, 0.f, 1.f);
+
+				CachedHUD->SetExtractProgress(Alpha);
+			}),
+		0.05f,
+		true
+	);
+
+	// 채널링 완료 대기
+	ActiveDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, CurrentExtractTime);
+	if (!ActiveDelayTask)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	ActiveDelayTask->OnFinish.AddDynamic(this, &UGA_Drone_Extract::OnExtractDelayFinished);
+	ActiveDelayTask->ReadyForActivation();
+
 }
 
 void UGA_Drone_Extract::OnExtractDelayFinished()
 {
-    const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
+	const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
+	if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
+	{
+		if (CachedHUD)
+			CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
 
-    if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
-    {
-        EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
-        return;
-    }
+		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
 
-    ASignalItemActor* TargetItem = CurrentTarget.Get();
-    if (!TargetItem)
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("Extract: Target lost before finish"));
-        EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
-        return;
-    }
+	AActor* Drone = ActorInfo->AvatarActor.Get();
+	ASignalItemActor* TargetItem = CurrentTarget.Get();
 
-    const int32 SignalAmount = TargetItem->ExtractSignal();
-    if (SignalAmount > 0)
-    {
-        UWorld* World = ActorInfo->AvatarActor->GetWorld();
-        if (World)
-        {
-            if (ASignalGameState* SGS = World->GetGameState<ASignalGameState>())
-            {
-                SGS->AddSignal(SignalAmount);
-                UE_LOG(LogTemp, Log, TEXT("GA_Drone_ExtractSignal: Extracted %d signal."), SignalAmount);
-            }
-        }
+	if (!TargetItem)
+	{
+		if (CachedHUD)
+			CachedHUD->SetExtractState(EExtractHUDState::NoTarget);
 
-    }
-    else
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("GA_Drone_ExtractSignal: Item already extracted or zero yield."));
-    }
+		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
 
-    EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, false);
+	// 최종 거리 검증
+	const float Dist = FVector::Dist(Drone->GetActorLocation(), TargetItem->GetActorLocation());
+	if (Dist > ExtractRadius)
+	{
+		if (CachedHUD)
+			CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+
+		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+
+	// 실제 추출
+	const int32 SignalAmount = TargetItem->ExtractSignal();
+	if (SignalAmount > 0)
+	{
+		if (UWorld* World = Drone->GetWorld())
+		{
+			if (ASignalGameState* SGS = World->GetGameState<ASignalGameState>())
+			{
+				SGS->AddSignal(SignalAmount);
+			}
+		}
+	}
+
+	if (CachedHUD)
+	{
+		CachedHUD->SetExtractProgress(1.f);
+		CachedHUD->SetExtractState(EExtractHUDState::Completed);
+	}
+
+	EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, false);
 }
 
-ASignalItemActor* UGA_Drone_Extract::FindItemToExtract(const FGameplayAbilityActorInfo* ActorInfo, FHitResult& OutHit) const
+void UGA_Drone_Extract::EndAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility,
+	bool bWasCancelled)
 {
-    OutHit = FHitResult();
+	// 진행률 타이머 정리
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ProgressTimerHandle);
+	}
 
-    if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
-    {
-        return nullptr;
-    }
+	if (ActiveDelayTask)
+	{
+		ActiveDelayTask->EndTask();
+		ActiveDelayTask = nullptr;
+	}
 
-    AActor* Drone = ActorInfo->AvatarActor.Get();
-    APlayerController* PC = Cast<APlayerController>(ActorInfo->PlayerController.Get());
+	if (bWasCancelled && CachedHUD)
+	{
+		CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+		CachedHUD->SetExtractProgress(0.f);
+	}
 
-    FVector Start = FVector::ZeroVector;
-    FVector End = FVector::ZeroVector;
-    FRotator CamRot = FRotator::ZeroRotator;
+	CachedHUD = nullptr;
+	CurrentTarget = nullptr;
+	CurrentExtractTime = 0.f;
+	ExtractStartTime = 0.f;
+	bCancelRequested = false;
 
-    if (PC && PC->PlayerCameraManager)
-    {
-        // 카메라 기준으로 트레이스 (3D 게임에서 일반적인 방식)
-        Start = PC->PlayerCameraManager->GetCameraLocation();
-        CamRot = PC->PlayerCameraManager->GetCameraRotation();
-    }
-    else
-    {
-        // Fallback: 아바타 위치 기준
-        Start = Drone->GetActorLocation();
-        CamRot = Drone->GetActorRotation();
-    }
-
-    const FVector Dir = CamRot.Vector();
-    End = Start + Dir * MaxExtractDistance;
-
-    UWorld* World = Drone->GetWorld();
-    if (!World)
-    {
-        return nullptr;
-    }
-
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(ExtractSignalTrace), false, Drone);
-    Params.AddIgnoredActor(Drone);
-    
-    bool bHit = false;
-
-    if (TraceRadius > 0.f)
-    {
-        // 스피어 트레이스 (조금 여유를 줘서 맞추기 쉽게)
-        bHit = World->SweepSingleByObjectType(
-            OutHit,
-            Start,
-            End,
-            FQuat::Identity,
-            ECC_SignalItem,
-            FCollisionShape::MakeSphere(TraceRadius),
-            Params
-        );
-
-
-        // Sweep 이후 디버그
-#if ENABLE_DRAW_DEBUG
-
-        const FColor HitColor = bHit ? FColor::Green : FColor::Red;
-        const float LifeTime = 1.0f;   // 1초 동안 표시
-        const bool  bPersistent = false;
-
-        // 1) 드론(시작점) → End 위치까지 라인
-        DrawDebugLine(
-            World,
-            Start,
-            End,
-            HitColor,
-            bPersistent,
-            LifeTime,
-            0,
-            1.5f
-        );
-
-        // 2) 실제 맞은 지점에 스피어 그리기 (못 맞췄으면 End 지점에 표시)
-        const FVector SphereCenter = bHit ? OutHit.Location : End;
-
-        DrawDebugSphere(
-            World,
-            SphereCenter,
-            TraceRadius,
-            16,
-            HitColor,
-            bPersistent,
-            LifeTime,
-            0,
-            1.5f
-        );
-
-#endif
-    }
-    else
-    {
-        // 단순 라인 트레이스
-        bHit = World->LineTraceSingleByObjectType(
-            OutHit,
-            Start,
-            End,
-            ECC_SignalItem,
-            Params
-        );
-    }
-
-    if (!bHit)
-    {
-        return nullptr;
-    }
-
-    AActor* HitActor = OutHit.GetActor();
-    ASignalItemActor* Item = Cast<ASignalItemActor>(HitActor);
-
-    if (!Item)
-    {
-        return nullptr;
-    }
-
-    DrawDebugExtract(ActorInfo, Item);
-
-    return Item;
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_Drone_Extract::DrawDebugExtract(const FGameplayAbilityActorInfo* ActorInfo, ASignalItemActor* Item) const
+ASignalItemActor* UGA_Drone_Extract::FindItemToExtract(const FGameplayAbilityActorInfo* ActorInfo) const
 {
-    AActor* Avatar = ActorInfo->AvatarActor.Get();
-    if (Avatar)
-    {
-        const FVector DroneLoc = Avatar->GetActorLocation();
-        const FVector ItemLoc = Item->GetActorLocation();
+	if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
+		return nullptr;
 
-        const float Distance = FVector::Dist(DroneLoc, ItemLoc);
+	AActor* Drone = ActorInfo->AvatarActor.Get();
+	UWorld* World = Drone->GetWorld();
+	if (!World)
+		return nullptr;
 
-        const float ScanRadius = 800.f; // 혹은 GA_Drone_Scan / DataAsset / Drone에서 가져오기
+	// 카메라 기준
+	FVector CamLoc = Drone->GetActorLocation();
+	FRotator CamRot = Drone->GetActorRotation();
 
-        const bool bInScanRange = (Distance <= ScanRadius);
+	if (ADronePlayerController* PC = Cast<ADronePlayerController>(ActorInfo->PlayerController.Get()))
+	{
+		if (PC->PlayerCameraManager)
+		{
+			CamLoc = PC->PlayerCameraManager->GetCameraLocation();
+			CamRot = PC->PlayerCameraManager->GetCameraRotation();
+		}
+	}
 
-        UE_LOG(LogTemp, Warning,
-            TEXT("[Extract Debug] Target=%s  Dist=%.1f  ScanRadius=%.1f  InScanRange=%s"),
-            *Item->GetName(),
-            Distance,
-            ScanRadius,
-            bInScanRange ? TEXT("TRUE") : TEXT("FALSE"));
+	const FVector CamForward = CamRot.Vector();
+	const FVector Center = Drone->GetActorLocation();
 
-        // 드론 기준 스캔 범위 디버그 구체
-        if (UWorld* World = Avatar->GetWorld())
-        {
-            DrawDebugSphere(
-                World,
-                DroneLoc,
-                ScanRadius,
-                24,
-                bInScanRange ? FColor::Green : FColor::Red,
-                false,
-                1.0f,   // 1초 동안 표시
-                0,
-                2.0f
-            );
+	TArray<FOverlapResult> Overlaps;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ExtractOverlap), false, Drone);
+	Params.AddIgnoredActor(Drone);
 
-            // 드론 → 아이템 디버그 라인
-            DrawDebugLine(
-                World,
-                DroneLoc,
-                ItemLoc,
-                FColor::Yellow,
-                false,
-                1.0f,
-                0,
-                1.5f
-            );
-        }
-    }
+	const bool bAny = World->OverlapMultiByObjectType(
+		Overlaps,
+		Center,
+		FQuat::Identity,
+		FCollisionObjectQueryParams(ECC_SignalItem),
+		FCollisionShape::MakeSphere(ExtractRadius),
+		Params
+	);
+
+	if (!bAny)
+		return nullptr;
+
+	ASignalItemActor* BestItem = nullptr;
+	float BestScore = -FLT_MAX;
+
+	for (const FOverlapResult& R : Overlaps)
+	{
+		ASignalItemActor* Item = Cast<ASignalItemActor>(R.GetActor());
+		if (!Item)
+			continue;
+
+		const FVector ToItem = Item->GetActorLocation() - CamLoc;
+		const float Dist = ToItem.Length();
+		if (Dist <= KINDA_SMALL_NUMBER)
+			continue;
+
+		const FVector Dir = ToItem / Dist;
+		const float FacingDot = FVector::DotProduct(CamForward, Dir);
+		if (FacingDot < MinFacingDot)
+			continue;
+
+		const float DistAlpha = 1.f - FMath::Clamp(Dist / (ExtractRadius * 2.f), 0.f, 1.f);
+		const float Score = FacingDot + DistAlpha * 0.5f;
+
+		if (Score > BestScore)
+		{
+			BestScore = Score;
+			BestItem = Item;
+		}
+	}
+
+	return BestItem;
 }
