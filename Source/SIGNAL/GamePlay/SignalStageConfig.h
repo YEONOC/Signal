@@ -22,17 +22,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
     int32 ThreatLevel = 1;
 
-    // 맵 크기나 복잡도 (원하면 FacilityGenerator 튜닝에 사용)
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
-    int32 MapSize = 1;
+    UPROPERTY(EditAnywhere, Category = "Signal Supply")
+    int32 TargetSignalSupply = 100;
 
-    // 스테이지 클리어에 필요한 신호량
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
-    int32 RequiredSignal = 100;
-
-    // 이 이상 모으면 보너스 보상 기준
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
-    int32 BonusSignalTarget = 150;
+    UPROPERTY(EditAnywhere, Category = "Signal Supply")
+    float SupplyVariance = 0.3f;
 
     /*
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")

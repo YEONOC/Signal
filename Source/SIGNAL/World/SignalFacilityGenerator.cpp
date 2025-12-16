@@ -37,7 +37,7 @@ void ASignalFacilityGenerator::DebugLogGridLayout() const
                 case ESignalRoomType::Start:      Symbol = TEXT('S'); break;
                 case ESignalRoomType::Corridor:   Symbol = TEXT('C'); break;
                 case ESignalRoomType::Objective:  Symbol = TEXT('O'); break;
-                case ESignalRoomType::Storage:    Symbol = TEXT('T'); break; // s 쓰면 start랑 헷갈리니까 T
+                case ESignalRoomType::Storage:    Symbol = TEXT('T'); break;
                 case ESignalRoomType::PowerRoom:  Symbol = TEXT('P'); break;
                 case ESignalRoomType::Lab:        Symbol = TEXT('L'); break;
                 case ESignalRoomType::Empty:      Symbol = TEXT('.'); break;
@@ -56,11 +56,10 @@ void ASignalFacilityGenerator::DebugLogGridLayout() const
 }
 
 
-void ASignalFacilityGenerator::BeginPlay()
+void ASignalFacilityGenerator::GenerateStage(int32 InSeed)
 {
-    Super::BeginPlay();
-
     // 랜덤 시드 초기화
+    Seed = InSeed;
     RandomStream.Initialize(Seed);
 
     // 그리드 초기화
@@ -75,6 +74,8 @@ void ASignalFacilityGenerator::BeginPlay()
             Cell.X = x;
             Cell.Y = y;
             Cell.RoomType = ESignalRoomType::Empty;
+            Cell.SpawnedRoomActor = nullptr;
+            Cell.Doors = FSignalRoomDoors();
         }
     }
 
@@ -90,7 +91,11 @@ void ASignalFacilityGenerator::BeginPlay()
     DistributeAndSpawnEnemies();
 
     DebugLogGridLayout();
+}
 
+void ASignalFacilityGenerator::ClearGeneratedActors()
+{
+    // 추후 추가
 }
 
 /**
@@ -471,9 +476,12 @@ void ASignalFacilityGenerator::DistributeAndSpawnItems()
         return;
 
     // 1) 목표 신호량 계산
-    const int32 RequiredSignal = GS->StageConfig->RequiredSignal;
-    // 맵 전체 신호량은 목표의 1.5~2배 정도를 제공 (여유)
-    int32 TargetTotalSignal = static_cast<int32>(RequiredSignal * 1.7f);
+    const int32 BaseSupply = GS->StageConfig->TargetSignalSupply;
+
+    const float Variance = GS->StageConfig->SupplyVariance;
+    const float RandMul = 1.f + RandomStream.FRandRange(-Variance, Variance);
+
+    int32 TargetTotalSignal = FMath::RoundToInt(BaseSupply * RandMul);
 
     // 2) 스폰 포인트 셔플 (랜덤 순서로 처리)
     TArray<FSignalItemSpawnPoint> ShuffledPoints = ItemSpawnPoints;

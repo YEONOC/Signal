@@ -40,17 +40,7 @@ bool ASignalGameState::IsStageCleared() const
         return false;
     }
 
-    return CurrentSignal >= StageConfig->RequiredSignal;
-}
-
-int32 ASignalGameState::GetRequiredSignal() const
-{
-    return StageConfig ? StageConfig->RequiredSignal : 0;
-}
-
-int32 ASignalGameState::GetBonusSignalTarget() const
-{
-    return StageConfig ? StageConfig->BonusSignalTarget : 0;
+    return true;
 }
 
 void ASignalGameState::HandleStageCleared()

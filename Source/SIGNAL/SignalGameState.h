@@ -31,13 +31,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Signal")
     bool IsStageCleared() const;
 
-    // 편의: 필요한 목표값 가져오기
-    UFUNCTION(BlueprintPure, Category = "Signal")
-    int32 GetRequiredSignal() const;
-
-    UFUNCTION(BlueprintPure, Category = "Signal")
-    int32 GetBonusSignalTarget() const;
-
 protected:
     void HandleStageCleared();
 

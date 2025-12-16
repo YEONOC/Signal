@@ -8,23 +8,36 @@
 
 
 class USignalRunSubsystem;
-class ASignalGameState;
 class USignalStageConfig;
+class USignalRunConfig;
+class ASignalFacilityGenerator;
 
 UCLASS()
 class ASIGNALGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
+public:
+    UFUNCTION(BlueprintCallable)
+    void SetFacilityGenerator(ASignalFacilityGenerator* InGenerator)
+    {
+        FacilityGenerator = InGenerator;
+    }
+
 protected:
     virtual void BeginPlay() override;
 
     /* Stage 흐름 */
     void StartStage();
+    UFUNCTION()
     void HandleStageCleared();
+    UFUNCTION()
+    void HandleStageFailed();
 
     /* Run 결과 */
+    UFUNCTION()
     void HandleRunCleared();
+    UFUNCTION()
     void HandleRunFailed();
 
 protected:
@@ -32,11 +45,14 @@ protected:
     TArray<TObjectPtr<USignalStageConfig>> StageConfigs;
 
     UPROPERTY(EditDefaultsOnly, Category = "Run")
-    TObjectPtr<class USignalRunConfig> RunConfig;
+    TObjectPtr<USignalRunConfig> RunConfig;
 
 private:
     UPROPERTY()
     TObjectPtr<USignalRunSubsystem> RunSubsystem;
+
+    UPROPERTY()
+    TObjectPtr<ASignalFacilityGenerator> FacilityGenerator;
 	
 };
 

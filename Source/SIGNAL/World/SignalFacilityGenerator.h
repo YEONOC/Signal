@@ -21,6 +21,7 @@ class SIGNAL_API ASignalFacilityGenerator : public AActor
 
 public:
     ASignalFacilityGenerator();
+    
     void DebugLogGridLayout() const;
 
     static bool IsSideRoom(ESignalRoomType Type)
@@ -37,8 +38,11 @@ public:
             || Type == ESignalRoomType::Objective;
     }
 
-protected:
-    virtual void BeginPlay() override;
+    UFUNCTION()
+    void GenerateStage(int32 InSeed);
+
+    UFUNCTION()
+    void ClearGeneratedActors();
 
 public:
     // 그리드 가로/세로 크기
