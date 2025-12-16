@@ -1,31 +1,21 @@
+// SignalRunConfig.h
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
 #include "SignalRunConfig.generated.h"
 
-class USignalEnemySet;
-class USignalItemSet;
-
-USTRUCT(BlueprintType)
-struct FSignalRunConfig
+UCLASS(BlueprintType)
+class SIGNAL_API USignalRunConfig : public UDataAsset
 {
-    GENERATED_BODY();
+    GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere)
-    int32 ThreatLevel;        // 적 난이도
+public:
+    // 한 Run에서 허용되는 Stage 수
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    int32 MaxStageCount = 3;
 
-    UPROPERTY(EditAnywhere)
-    int32 MapSize;            // 맵 크기/복잡도 (간단히)
-
-    UPROPERTY(EditAnywhere)
-    int32 RequiredSignal;     // 스테이지 클리어에 필요한 신호 정보량
-
-    UPROPERTY(EditAnywhere)
-    int32 BonusSignalTarget;  // 이 이상 모으면 추가 보상 조건
-
-    UPROPERTY(EditAnywhere)
-    TSubclassOf<USignalItemSet> ItemSet;   // 이 맵에서 사용할 아이템 풀
-
-    //UPROPERTY(EditAnywhere)
-    //TSubclassOf<USignalEnemySet> EnemySet; // 이 맵에서 사용할 적 풀
+    // Run 클리어를 위한 총 Signal 목표
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    int32 RequiredTotalSignal = 300;
 };

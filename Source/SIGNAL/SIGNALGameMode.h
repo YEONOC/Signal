@@ -6,26 +6,37 @@
 #include "GameFramework/GameModeBase.h"
 #include "SIGNALGameMode.generated.h"
 
-/**
- *  Simple GameMode for a third person game
- */
-UCLASS(abstract)
+
+class USignalRunSubsystem;
+class ASignalGameState;
+class USignalStageConfig;
+
+UCLASS()
 class ASIGNALGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
-public:
-    /** Constructor */
-    ASIGNALGameMode();
-
-public:
-
-    // 이 스테이지에서 사용할 설정
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
-    TObjectPtr<class USignalStageConfig> DefaultStageConfig;
-
+protected:
     virtual void BeginPlay() override;
 
+    /* Stage 흐름 */
+    void StartStage();
+    void HandleStageCleared();
+
+    /* Run 결과 */
+    void HandleRunCleared();
+    void HandleRunFailed();
+
+protected:
+    UPROPERTY(EditDefaultsOnly, Category = "Stage")
+    TArray<TObjectPtr<USignalStageConfig>> StageConfigs;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Run")
+    TObjectPtr<class USignalRunConfig> RunConfig;
+
+private:
+    UPROPERTY()
+    TObjectPtr<USignalRunSubsystem> RunSubsystem;
 	
 };
 

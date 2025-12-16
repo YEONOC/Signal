@@ -26,18 +26,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
     int32 MapSize = 1;
 
-    // 💡 스테이지 클리어에 필요한 신호량
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Signal")
+    // 스테이지 클리어에 필요한 신호량
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
     int32 RequiredSignal = 100;
 
     // 이 이상 모으면 보너스 보상 기준
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Signal")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stage")
     int32 BonusSignalTarget = 150;
 
-     /*나중에 EnemySet / ItemSet 같은 것도 여기 연결 가능
-     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
-     TObjectPtr<USignalEnemySet> EnemySet;*/
+    /*
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
+    TObjectPtr<USignalEnemySet> EnemySet;*/
     
-     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
-     TObjectPtr<USignalItemSet> ItemSet;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stage")
+    TObjectPtr<USignalItemSet> ItemSet;
 };
