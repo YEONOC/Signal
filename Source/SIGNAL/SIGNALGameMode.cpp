@@ -100,6 +100,31 @@ void ASIGNALGameMode::HandleStageFailed()
     }
 }
 
+void ASIGNALGameMode::EndStage(bool bSuccess)
+{
+    ASignalGameState* GS = GetGameState<ASignalGameState>();
+    if (!GS || !RunSubsystem) return;
+
+    const int32 StageSignal = GS->CurrentSignal; // Stage에서 추출한 시그널
+
+    // 탈출에 성공 (복귀 성공)
+    if (bSuccess)
+    {
+        RunSubsystem->FinishCurrentStage(StageSignal);
+    }
+    // 탈출 실패 (배터리 방전 || etc)
+    else
+    {
+        RunSubsystem->FailCurrentStage();
+    }
+
+    // 해당 Run에 잔여 스테이지가 남아있으면 다음 스테이지 시작
+    if (RunSubsystem->HasRemainingStages())
+    {
+        StartStage();
+    }
+}
+
 void ASIGNALGameMode::HandleRunCleared()
 {
     UE_LOG(LogTemp, Log, TEXT("Run Cleared!"));

@@ -24,6 +24,10 @@ public:
         FacilityGenerator = InGenerator;
     }
 
+    // 수동 Stage 종료 시 호출
+    UFUNCTION()
+    void EndStage(bool bSuccess);
+
 protected:
     virtual void BeginPlay() override;
 
