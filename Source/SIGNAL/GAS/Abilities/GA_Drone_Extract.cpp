@@ -51,7 +51,7 @@ void UGA_Drone_Extract::ActivateAbility(
 	if (!TargetItem)
 	{
 		if (CachedHUD)
-			CachedHUD->SetExtractState(EExtractHUDState::NoTarget);
+			CachedHUD->SetInteractState(EInteractHUDState::NoTarget);
 
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
@@ -63,8 +63,8 @@ void UGA_Drone_Extract::ActivateAbility(
 	// HUD 시작 상태
 	if (CachedHUD)
 	{
-		CachedHUD->SetExtractState(EExtractHUDState::Extracting);
-		CachedHUD->SetExtractProgress(0.f);
+		CachedHUD->SetInteractState(EInteractHUDState::Extracting);
+		CachedHUD->SetInteractProgress(0.f);
 	}
 
 	ExtractStartTime = GetWorld()->GetTimeSeconds();
@@ -96,7 +96,7 @@ void UGA_Drone_Extract::ActivateAbility(
 				{
 					bCancelRequested = true;
 
-					CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+					CachedHUD->SetInteractState(EInteractHUDState::Cancelled);
 
 					if (UWorld* World = GetWorld())
 					{
@@ -110,7 +110,7 @@ void UGA_Drone_Extract::ActivateAbility(
 				const float Now = GetWorld()->GetTimeSeconds();
 				const float Alpha = FMath::Clamp((Now - ExtractStartTime) / CurrentExtractTime, 0.f, 1.f);
 
-				CachedHUD->SetExtractProgress(Alpha);
+				CachedHUD->SetInteractProgress(Alpha);
 			}),
 		0.05f,
 		true
@@ -135,7 +135,7 @@ void UGA_Drone_Extract::OnExtractDelayFinished()
 	if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
 	{
 		if (CachedHUD)
-			CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+			CachedHUD->SetInteractState(EInteractHUDState::Cancelled);
 
 		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
 		return;
@@ -147,7 +147,7 @@ void UGA_Drone_Extract::OnExtractDelayFinished()
 	if (!TargetItem)
 	{
 		if (CachedHUD)
-			CachedHUD->SetExtractState(EExtractHUDState::NoTarget);
+			CachedHUD->SetInteractState(EInteractHUDState::NoTarget);
 
 		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
 		return;
@@ -158,7 +158,7 @@ void UGA_Drone_Extract::OnExtractDelayFinished()
 	if (Dist > ExtractRadius)
 	{
 		if (CachedHUD)
-			CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
+			CachedHUD->SetInteractState(EInteractHUDState::Cancelled);
 
 		EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, true);
 		return;
@@ -179,8 +179,8 @@ void UGA_Drone_Extract::OnExtractDelayFinished()
 
 	if (CachedHUD)
 	{
-		CachedHUD->SetExtractProgress(1.f);
-		CachedHUD->SetExtractState(EExtractHUDState::Completed);
+		CachedHUD->SetInteractProgress(1.f);
+		CachedHUD->SetInteractState(EInteractHUDState::Completed);
 	}
 
 	EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, false);
@@ -207,8 +207,8 @@ void UGA_Drone_Extract::EndAbility(
 
 	if (bWasCancelled && CachedHUD)
 	{
-		CachedHUD->SetExtractState(EExtractHUDState::Cancelled);
-		CachedHUD->SetExtractProgress(0.f);
+		CachedHUD->SetInteractState(EInteractHUDState::Cancelled);
+		CachedHUD->SetInteractProgress(0.f);
 	}
 
 	CachedHUD = nullptr;

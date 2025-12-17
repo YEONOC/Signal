@@ -17,15 +17,14 @@ class UImage;
 class UMaterialInstanceDynamic;
 
 UENUM(BlueprintType)
-enum class EExtractHUDState : uint8
+enum class EInteractHUDState : uint8
 {
-    Hidden      UMETA(DisplayName = "Hidden"),
-    NoTarget    UMETA(DisplayName = "NoTarget"),
-    Candidate   UMETA(DisplayName = "Candidate"),
+    None        UMETA(DisplayName = "None"),
     Extracting  UMETA(DisplayName = "Extracting"),
-    Cancelled   UMETA(DisplayName = "Cancelled"),
+    Exiting     UMETA(DisplayName = "Exiting"),
     Completed   UMETA(DisplayName = "Completed"),
-    OutOfRange  UMETA(DisplayName = "OutOfRange")
+    Cancelled   UMETA(DisplayName = "Cancelled"),
+    NoTarget    UMETA(DisplayName = "NoTarget"),
 };
 
 /**
@@ -41,14 +40,15 @@ public:
     UFUNCTION(BlueprintCallable, Category = "HUD")
     void InitializeFromASC(UAbilitySystemComponent* InASC, const UDroneCoreAttributeSet* InAttrSet);
 
-    UFUNCTION(BlueprintCallable, Category = "HUD|Extract")
-    void SetExtractCandidate(const FString& TargetName, float Distance, bool bHasTarget);
+    // ===== Interact UI (Extract / Exit 공용) =====
+    UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
+    void SetInteractState(EInteractHUDState NewState);
 
-    UFUNCTION(BlueprintCallable, Category = "HUD|Extract")
-    void SetExtractProgress(float Alpha); // 0~1
+    UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
+    void SetInteractProgress(float Normalized01);
 
-    UFUNCTION(BlueprintCallable, Category = "HUD|Extract")
-    void SetExtractState(EExtractHUDState NewState, const FString& OptionalMessage = TEXT(""));
+    UFUNCTION(BlueprintPure, Category = "HUD|Interact")
+    EInteractHUDState GetInteractState() const { return InteractState; }
 
 protected:
     virtual void NativeConstruct() override;
@@ -64,24 +64,14 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> BatteryText;
 
-    // Extract UI
+    // Interact UI
+    // 원형 ProgressBar를 쓰는 경우
     UPROPERTY(meta = (BindWidgetOptional))
-    TObjectPtr<UPanelWidget> ExtractPanel;
+    TObjectPtr<UProgressBar> InteractProgressBar = nullptr;
 
+    // Image + Dynamic Material을 쓰는 경우
     UPROPERTY(meta = (BindWidgetOptional))
-    TObjectPtr<UTextBlock> ExtractTargetText;
-
-    UPROPERTY(meta = (BindWidgetOptional))
-    TObjectPtr<UTextBlock> ExtractDistanceText;
-
-    UPROPERTY(meta = (BindWidgetOptional))
-    TObjectPtr<UTextBlock> ExtractStateText;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UImage> Img_ExtractRing;
-
-    UPROPERTY()
-    TObjectPtr<UMaterialInstanceDynamic> ExtractMID;
+    TObjectPtr<UImage> InteractProgressImage = nullptr;
 
 private:
     UPROPERTY()
@@ -98,10 +88,26 @@ private:
     void OnBatteryMaxChanged(const FOnAttributeChangeData& Data);
 
     void RefreshBatteryUI();   // Battery/BatteryMax로 UI 갱신
+    void RefreshInteractUI();
 
-    // Extract
-    EExtractHUDState CurrentExtractState = EExtractHUDState::Hidden;
+    UPROPERTY()
+    EInteractHUDState InteractState = EInteractHUDState::None;
 
-    void ApplyExtractVisibility(bool bVisible);
-    void RefreshExtractStateText(EExtractHUDState State, const FString& OptionalMessage);
+    UPROPERTY()
+    float InteractProgress01 = 0.f;
+
+    // Dynamic material 캐시 (Image 기반일 때)
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> InteractMID = nullptr;
+
+    // 머티리얼 파라미터 이름(너가 만든 머티리얼에 맞춰 수정)
+    UPROPERTY(EditDefaultsOnly, Category = "HUD|Interact")
+    FName InteractProgressParamName = TEXT("Progress");
+
+    // 상태별 표시 문자열(간단 버전)
+    FString GetStateString(EInteractHUDState State) const;
+
+    // UI 표시/숨김 규칙
+    bool ShouldShowInteractUI(EInteractHUDState State) const;
+
 };

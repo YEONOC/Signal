@@ -133,28 +133,28 @@ void ADronePlayerController::SetupInputComponent()
                     &ADronePlayerController::ScanInput
                 );
             }
-            // Extract
-            else if (ActionEntry.InputTag == SignalTags.Input_Drone_Extract)
+            // Interact
+            else if (ActionEntry.InputTag == SignalTags.Input_Drone_Extract || ActionEntry.InputTag == SignalTags.Input_Drone_Exit)
             {
                 // 누르기 시작 → 어빌리티 활성
                 EnhancedInput->BindAction(
                     ActionEntry.InputAction,
                     ETriggerEvent::Started,
                     this,
-                    &ADronePlayerController::ExtractInput_Pressed);
+                    &ADronePlayerController::InteractInput_Pressed);
 
                 // 떼는 순간 → 어빌리티 Cancel
                 EnhancedInput->BindAction(
                     ActionEntry.InputAction,
                     ETriggerEvent::Canceled,
                     this,
-                    &ADronePlayerController::ExtractInput_Released);
+                    &ADronePlayerController::InteractInput_Released);
 
                 EnhancedInput->BindAction(
                     ActionEntry.InputAction,
                     ETriggerEvent::Completed,
                     this,
-                    &ADronePlayerController::ExtractInput_Released);
+                    &ADronePlayerController::InteractInput_Released);
             }
             // 나중에:
             // else if (ActionEntry.InputTag == Tags.Input_Drone_Dash) { ... }
@@ -233,22 +233,34 @@ void ADronePlayerController::ScanInput(const FInputActionValue& Value)
     }
 }
 
-void ADronePlayerController::ExtractInput_Pressed(const FInputActionValue& Value)
+void ADronePlayerController::InteractInput_Pressed(const FInputActionValue& Value)
 {
     if (APawn* SignalPawn = GetPawn())
     {
-        if (USignalAbilitySystemComponent* ASC = SignalPawn->FindComponentByClass<USignalAbilitySystemComponent>())
-        {
-            const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
-            
-            bool bResult = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Extract);
+        USignalAbilitySystemComponent* ASC = SignalPawn->FindComponentByClass<USignalAbilitySystemComponent>();
+        if (!ASC) return;
 
-            UE_LOG(LogTemp, Warning, TEXT("ExtractInput: TryActivateAbilitiesByTag = %s"), bResult ? TEXT("true") : TEXT("false"));
+        ADroneCharacter* Drone = Cast<ADroneCharacter>(SignalPawn);
+        if (!Drone) return;
+        
+        const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
+        // Exit
+        if (ASignalExitActor* Exit = Drone->GetCurrentExit())
+        {
+            const bool bExitActivated = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Exit);
+            UE_LOG(LogTemp, Log, TEXT("InteractInput: TryActivate Exit = %s"), bExitActivated ? TEXT("true") : TEXT("false"));
+
+            return;
         }
+
+        // Extract
+        const bool bExtractActivated = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Extract);
+        UE_LOG(LogTemp, Log, TEXT("InteractInput: TryActivate Extract = %s"), bExtractActivated ? TEXT("true") : TEXT("false"));
+
     }
 }
 
-void ADronePlayerController::ExtractInput_Released(const FInputActionValue& Value)
+void ADronePlayerController::InteractInput_Released(const FInputActionValue& Value)
 {
     if (APawn* SignalPawn = GetPawn())
     {
@@ -256,9 +268,10 @@ void ADronePlayerController::ExtractInput_Released(const FInputActionValue& Valu
         {
             const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
+            ASC->CancelAbilitiesByInputTag(SignalTags.Input_Drone_Exit);
             ASC->CancelAbilitiesByInputTag(SignalTags.Input_Drone_Extract);
 
-            UE_LOG(LogTemp, Warning, TEXT("ExtractInput: CancelAbilitiesByTag"));
+            UE_LOG(LogTemp, Warning, TEXT("InteractInput: Cancel Exit/Extract"));
         }
     }
 }

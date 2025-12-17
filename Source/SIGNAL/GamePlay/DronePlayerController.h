@@ -37,8 +37,8 @@ protected:
 
     void LightToggleInput(const FInputActionValue& Value);
     void ScanInput(const FInputActionValue& Value);
-    void ExtractInput_Pressed(const FInputActionValue& Value);
-    void ExtractInput_Released(const FInputActionValue& Value);
+    void InteractInput_Pressed(const FInputActionValue& Value);
+    void InteractInput_Released(const FInputActionValue& Value);
 
 protected:
     /** 드론 기본 입력 매핑 컨텍스트 */

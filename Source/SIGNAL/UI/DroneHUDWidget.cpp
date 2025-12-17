@@ -11,6 +11,51 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 
+void UDroneHUDWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // Interact Image 기반이면 MID 생성
+    if (InteractProgressImage)
+    {
+        UMaterialInterface* BaseMat = InteractProgressImage->GetBrush().GetResourceObject()
+            ? Cast<UMaterialInterface>(InteractProgressImage->GetBrush().GetResourceObject())
+            : nullptr;
+
+        if (BaseMat)
+        {
+            InteractMID = UMaterialInstanceDynamic::Create(BaseMat, this);
+            InteractProgressImage->SetBrushFromMaterial(InteractMID);
+        }
+    }
+
+    // 초기 UI 상태
+    InteractState = EInteractHUDState::None;
+    InteractProgress01 = 0.f;
+    RefreshInteractUI();
+}
+
+void UDroneHUDWidget::NativeDestruct()
+{
+    if (ASC)
+    {
+        if (BatteryChangedHandle.IsValid())
+        {
+            ASC->GetGameplayAttributeValueChangeDelegate(UDroneCoreAttributeSet::GetBatteryAttribute())
+                .Remove(BatteryChangedHandle);
+        }
+        if (BatteryMaxChangedHandle.IsValid())
+        {
+            ASC->GetGameplayAttributeValueChangeDelegate(UDroneCoreAttributeSet::GetBatteryMaxAttribute())
+                .Remove(BatteryMaxChangedHandle);
+        }
+    }
+
+    ASC = nullptr;
+    AttrSet = nullptr;
+
+    Super::NativeDestruct();
+}
 
 void UDroneHUDWidget::InitializeFromASC(UAbilitySystemComponent* InASC, const UDroneCoreAttributeSet* InAttrSet)
 {
@@ -45,105 +90,7 @@ void UDroneHUDWidget::InitializeFromASC(UAbilitySystemComponent* InASC, const UD
     RefreshBatteryUI();
 }
 
-void UDroneHUDWidget::SetExtractCandidate(const FString& TargetName, float Distance, bool bHasTarget)
-{
-    if (!ExtractTargetText || !ExtractDistanceText)
-        return;
-
-    if (!bHasTarget)
-    {
-        ExtractTargetText->SetText(FText::FromString(TEXT("Target: -")));
-        ExtractDistanceText->SetText(FText::FromString(TEXT("-")));
-        SetExtractProgress(0.f);
-        SetExtractState(EExtractHUDState::NoTarget);
-        ApplyExtractVisibility(false);
-        return;
-    }
-
-    ApplyExtractVisibility(true);
-
-    ExtractTargetText->SetText(FText::FromString(FString::Printf(TEXT("Target: %s"), *TargetName)));
-    ExtractDistanceText->SetText(FText::FromString(FString::Printf(TEXT("%.1fm"), Distance)));
-
-    // 후보 상태로 유지 (추출 중이면 Extracting이 우선)
-    if (CurrentExtractState != EExtractHUDState::Extracting)
-    {
-        SetExtractState(EExtractHUDState::Candidate);
-        SetExtractProgress(0.f);
-    }
-}
-
-void UDroneHUDWidget::SetExtractProgress(float Alpha)
-{
-    if (!ExtractMID)
-        return;
-
-    ExtractMID->SetScalarParameterValue(TEXT("Progress"), Alpha);
-}
-
-void UDroneHUDWidget::SetExtractState(EExtractHUDState NewState, const FString& OptionalMessage)
-{
-    CurrentExtractState = NewState;
-
-    if (Img_ExtractRing)
-    {
-        const bool bShow = (NewState == EExtractHUDState::Extracting);
-        Img_ExtractRing->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-    }
-
-    if (!ExtractMID)
-        return;
-
-    // 상태에 따라 패널 표시 정책
-    if (NewState == EExtractHUDState::Hidden)
-    {
-        ApplyExtractVisibility(false);
-        return;
-    }
-
-    ApplyExtractVisibility(true);
-    RefreshExtractStateText(NewState, OptionalMessage);
-
-    // Completed/Cancelled는 Progress를 0으로 리셋하거나 유지 정책 선택 가능
-    if (NewState == EExtractHUDState::Cancelled || NewState == EExtractHUDState::Completed)
-    {
-        if (NewState == EExtractHUDState::Cancelled)
-        {
-            SetExtractProgress(0.f);
-        }
-    }
-}
-
-void UDroneHUDWidget::NativeConstruct()
-{
-    if (Img_ExtractRing)
-    {
-        Img_ExtractRing->SetVisibility(ESlateVisibility::Collapsed);
-        ExtractMID = Img_ExtractRing->GetDynamicMaterial();
-        SetExtractProgress(0.f);
-    }
-
-    Super::NativeConstruct();
-}
-
-void UDroneHUDWidget::NativeDestruct()
-{
-    if (ASC)
-    {
-        if (BatteryChangedHandle.IsValid())
-        {
-            ASC->GetGameplayAttributeValueChangeDelegate(AttrSet->GetBatteryAttribute())
-                .Remove(BatteryChangedHandle);
-        }
-        if (BatteryMaxChangedHandle.IsValid())
-        {
-            ASC->GetGameplayAttributeValueChangeDelegate(AttrSet->GetBatteryMaxAttribute())
-                .Remove(BatteryMaxChangedHandle);
-        }
-    }
-
-    Super::NativeDestruct();
-}
+// ========================= Battery =========================
 
 void UDroneHUDWidget::OnBatteryChanged(const FOnAttributeChangeData& Data)
 {
@@ -177,38 +124,97 @@ void UDroneHUDWidget::RefreshBatteryUI()
     }
 
     // 디버그용
-    // UE_LOG(LogTemp, Warning, TEXT("[HUD] Battery %.1f / %.1f"), Battery, BatteryMax);
+    UE_LOG(LogTemp, Warning, TEXT("[HUD] Battery %.1f / %.1f"), Battery, BatteryMax);
 }
 
-void UDroneHUDWidget::ApplyExtractVisibility(bool bVisible)
-{
-    if (ExtractPanel)
-    {
-        ExtractPanel->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-    }
-}
+// ========================= Interact (Extract / Exit) =========================
 
-void UDroneHUDWidget::RefreshExtractStateText(EExtractHUDState State, const FString& OptionalMessage)
+void UDroneHUDWidget::SetInteractState(EInteractHUDState NewState)
 {
-    if (!ExtractStateText)
+    if (InteractState == NewState)
         return;
 
-    FString Msg = OptionalMessage;
+    InteractState = NewState;
 
-    if (Msg.IsEmpty())
+    // Cancel/Completed/None이면 진행률 리셋하는 정책
+    if (InteractState == EInteractHUDState::None ||
+        InteractState == EInteractHUDState::Cancelled ||
+        InteractState == EInteractHUDState::NoTarget)
     {
-        switch (State)
-        {
-        case EExtractHUDState::Hidden:     Msg = TEXT(""); break;
-        case EExtractHUDState::NoTarget:   Msg = TEXT("NO TARGET"); break;
-        case EExtractHUDState::Candidate:  Msg = TEXT("READY"); break;
-        case EExtractHUDState::Extracting: Msg = TEXT("EXTRACTING..."); break;
-        case EExtractHUDState::Cancelled:  Msg = TEXT("CANCELLED"); break;
-        case EExtractHUDState::Completed:  Msg = TEXT("COMPLETE"); break;
-        case EExtractHUDState::OutOfRange: Msg = TEXT("OUT OF RANGE"); break;
-        default: Msg = TEXT(""); break;
-        }
+        InteractProgress01 = 0.f;
     }
 
-    ExtractStateText->SetText(FText::FromString(Msg));
+    RefreshInteractUI();
 }
+
+void UDroneHUDWidget::SetInteractProgress(float Normalized01)
+{
+    InteractProgress01 = FMath::Clamp(Normalized01, 0.f, 1.f);
+
+    // ProgressBar 기반
+    if (InteractProgressBar)
+    {
+        InteractProgressBar->SetPercent(InteractProgress01);
+    }
+
+    // Image + MID 기반
+    if (InteractMID)
+    {
+        InteractMID->SetScalarParameterValue(InteractProgressParamName, InteractProgress01);
+    }
+}
+
+void UDroneHUDWidget::RefreshInteractUI()
+{
+    const bool bShow = ShouldShowInteractUI(InteractState);
+
+    if (InteractProgressBar)
+    {
+        InteractProgressBar->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        // 상태 바뀐 경우 Percent도 맞춰줌
+        InteractProgressBar->SetPercent(InteractProgress01);
+    }
+
+    if (InteractProgressImage)
+    {
+        InteractProgressImage->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+        if (InteractMID)
+        {
+            InteractMID->SetScalarParameterValue(InteractProgressParamName, InteractProgress01);
+        }
+    }
+}
+
+bool UDroneHUDWidget::ShouldShowInteractUI(EInteractHUDState State) const
+{
+    switch (State)
+    {
+    case EInteractHUDState::Extracting:
+    case EInteractHUDState::Exiting:
+        return true;
+
+        // Completed/Cancelled도 잠깐 보여주고 싶으면 true로 바꿀 수 있음
+    case EInteractHUDState::Completed:
+    case EInteractHUDState::Cancelled:
+    case EInteractHUDState::NoTarget:
+    case EInteractHUDState::None:
+    default:
+        return false;
+    }
+}
+
+FString UDroneHUDWidget::GetStateString(EInteractHUDState State) const
+{
+    switch (State)
+    {
+    case EInteractHUDState::Extracting: return TEXT("EXTRACTING");
+    case EInteractHUDState::Exiting:    return TEXT("EXITING");
+    case EInteractHUDState::Completed:  return TEXT("COMPLETED");
+    case EInteractHUDState::Cancelled:  return TEXT("CANCELLED");
+    case EInteractHUDState::NoTarget:   return TEXT("NO TARGET");
+    case EInteractHUDState::None:
+    default:                            return TEXT("");
+    }
+}
+

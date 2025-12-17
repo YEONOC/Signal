@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "GamePlay/SignalExitActor.h"
 #include "DroneCharacter.generated.h"
 
 class USignalAbilitySystemComponent;
@@ -27,6 +28,9 @@ public:
 
     // IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+    void SetCurrentExit(ASignalExitActor* InExit) { CurrentExit = InExit; }
+    ASignalExitActor* GetCurrentExit() const { return CurrentExit.Get(); }
 
 protected:
 	// Called when the game starts or when spawned
@@ -62,7 +66,7 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "GAS")
     TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 
-    // --- Drone Tilt Settings ---
+    // Drone Tilt Settings 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drone|Tilt")
     float MaxTiltAngle = 15.f;
 
@@ -78,5 +82,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone")
     TObjectPtr<USkeletalMeshComponent> DroneMesh;
+
+    // 탈출 Actor 캐싱
+    UPROPERTY()
+    TWeakObjectPtr<class ASignalExitActor> CurrentExit;
 
 };

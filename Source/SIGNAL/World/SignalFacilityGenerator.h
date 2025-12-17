@@ -3,11 +3,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "SignalRoomSet.h"
+#include "SignalSpawnPoint.h"
 #include "SignalRoomTypes.h"
 #include "SignalFacilityGenerator.generated.h"
 
-struct FSignalItemSpawnPoint;
-struct FSignalEnemySpawnPoint;
 
 /**
  * 프로시저럴 시설(던전) 생성기 액터

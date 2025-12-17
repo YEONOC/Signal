@@ -35,8 +35,8 @@ void FSignalGameplayTags::InitializeNativeTags()
     AddTag(GameplayTagsInstance.Ability_Drone_LightToggle, "Ability.Drone.LightToggle", TEXT("Toggle drone light on/off"));
     AddTag(GameplayTagsInstance.Ability_Drone_Scan, "Ability.Drone.Scan", TEXT("Drone scan ability"));
     AddTag(GameplayTagsInstance.Ability_Drone_Extract, "Ability.Drone.Extract", TEXT("Drone extract ability"));
-    AddTag(GameplayTagsInstance.Ability_Drone_Interact, "Ability.Drone.Interact", TEXT("Drone interact ability"));
     AddTag(GameplayTagsInstance.Ability_Drone_PassiveBattery, "Ability.Drone.PassiveBattery", TEXT("Passive battery system ability"));
+    AddTag(GameplayTagsInstance.Ability_Drone_Exit, "Ability.Drone.Exit", TEXT("Exit Stage ability"));
 
     // State
     AddTag(GameplayTagsInstance.State_Drone_LightOn, "State.Drone.LightOn", TEXT("Drone light is currently on"));
@@ -56,6 +56,7 @@ void FSignalGameplayTags::InitializeNativeTags()
     AddTag(GameplayTagsInstance.Input_Drone_LightToggle, "Input.Drone.LightToggle", TEXT("Input for toggling drone light"));
     AddTag(GameplayTagsInstance.Input_Drone_Scan, "Input.Drone.Scan", TEXT("Input for drone scan pulse"));
     AddTag(GameplayTagsInstance.Input_Drone_Extract, "Input.Drone.Extract", TEXT("Input for drone extract Signal"));
+    AddTag(GameplayTagsInstance.Input_Drone_Exit, "Input.Drone.Exit", TEXT("Input for drone Exit Stage"));
 
     // SetByCaller
     AddTag(GameplayTagsInstance.SetByCaller_BatteryDelta, "SetByCaller.BatteryDelta", TEXT("SetByCaller for changing battery value"));
