@@ -68,9 +68,4 @@ int32 ASignalItemActor::ExtractSignal()
     return SignalAmount;
 }
 
-int32 ASignalItemActor::GetRandomSignalYield() const
-{
-    return FMath::RandRange(SignalYieldMin, SignalYieldMax);
-}
-
 

@@ -42,6 +42,12 @@ public:
 
     // ===== Interact UI (Extract / Exit 공용) =====
     UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
+    void SetInteractTarget(FName TargetName);
+
+    UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
+    void SetSignalAmount(int32 MinSignal, int32 MaxSignal);
+
+    UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
     void SetInteractState(EInteractHUDState NewState);
 
     UFUNCTION(BlueprintCallable, Category = "HUD|Interact")
@@ -65,6 +71,14 @@ protected:
     TObjectPtr<UTextBlock> BatteryText;
 
     // Interact UI
+    UPROPERTY(meta = (BindWidgetOptional))
+    TObjectPtr<UTextBlock> InteractTargetText = nullptr;
+    
+    UPROPERTY(meta = (BindWidgetOptional))
+    TObjectPtr<UTextBlock> SignalAmountText = nullptr;
+
+    UPROPERTY(meta = (BindWidgetOptional))
+    TObjectPtr<UTextBlock> InteractStateText = nullptr;
     // 원형 ProgressBar를 쓰는 경우
     UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UProgressBar> InteractProgressBar = nullptr;
@@ -73,25 +87,45 @@ protected:
     UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UImage> InteractProgressImage = nullptr;
 
+    
+
 private:
     UPROPERTY()
     TObjectPtr<UAbilitySystemComponent> ASC;
 
-    // Battery
     UPROPERTY()
     TObjectPtr<const UDroneCoreAttributeSet> AttrSet;
 
+    // --------------- Battery ------------------
     FDelegateHandle BatteryChangedHandle;
     FDelegateHandle BatteryMaxChangedHandle;
 
     void OnBatteryChanged(const FOnAttributeChangeData& Data);
     void OnBatteryMaxChanged(const FOnAttributeChangeData& Data);
 
+    // -------------- Interact -----------------
     void RefreshBatteryUI();   // Battery/BatteryMax로 UI 갱신
     void RefreshInteractUI();
 
+    // 상태별 표시 문자열
+    FString GetStateString(EInteractHUDState State) const;
+
+    // UI 표시/숨김 규칙
+    bool ShouldShowInteractUI(EInteractHUDState State) const;
+
+private:
     UPROPERTY()
     EInteractHUDState InteractState = EInteractHUDState::None;
+
+    // 
+    UPROPERTY()
+    FName CachedTargetName = "None";
+
+    UPROPERTY()
+    int32 CachedSignalMin = 0;
+
+    UPROPERTY()
+    int32 CachedSignalMax = 0;
 
     UPROPERTY()
     float InteractProgress01 = 0.f;
@@ -103,11 +137,4 @@ private:
     // 머티리얼 파라미터 이름(너가 만든 머티리얼에 맞춰 수정)
     UPROPERTY(EditDefaultsOnly, Category = "HUD|Interact")
     FName InteractProgressParamName = TEXT("Progress");
-
-    // 상태별 표시 문자열(간단 버전)
-    FString GetStateString(EInteractHUDState State) const;
-
-    // UI 표시/숨김 규칙
-    bool ShouldShowInteractUI(EInteractHUDState State) const;
-
 };

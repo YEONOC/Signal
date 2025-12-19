@@ -129,6 +129,23 @@ void UDroneHUDWidget::RefreshBatteryUI()
 
 // ========================= Interact (Extract / Exit) =========================
 
+void UDroneHUDWidget::SetInteractTarget(FName TargetName)
+{
+    if (CachedTargetName == TargetName) 
+        return;
+
+    CachedTargetName = TargetName;
+}
+
+void UDroneHUDWidget::SetSignalAmount(int32 MinSignal, int32 MaxSignal)
+{
+    if (CachedSignalMin == MinSignal && CachedSignalMax == MaxSignal)
+        return;
+
+    CachedSignalMin = MinSignal;
+    CachedSignalMax = MaxSignal;
+}
+
 void UDroneHUDWidget::SetInteractState(EInteractHUDState NewState)
 {
     if (InteractState == NewState)
@@ -168,6 +185,12 @@ void UDroneHUDWidget::RefreshInteractUI()
 {
     const bool bShow = ShouldShowInteractUI(InteractState);
 
+    if (InteractStateText)
+    {
+        InteractStateText->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        InteractStateText->SetText(FText::FromString(GetStateString(InteractState)));
+    }
+
     if (InteractProgressBar)
     {
         InteractProgressBar->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -182,6 +205,33 @@ void UDroneHUDWidget::RefreshInteractUI()
         if (InteractMID)
         {
             InteractMID->SetScalarParameterValue(InteractProgressParamName, InteractProgress01);
+        }
+    }
+
+    // ===== Extract 전용 표시(타겟/예상 Signal) =====
+    const bool bShowExtractInfo = (InteractState == EInteractHUDState::Extracting) && bShow;
+
+    if (InteractTargetText)
+    {
+        InteractTargetText->SetVisibility(bShowExtractInfo ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        if (bShowExtractInfo)
+        {
+            InteractTargetText->SetText(FText::FromName(CachedTargetName));
+        }
+    }
+
+    if (SignalAmountText)
+    {
+        SignalAmountText->SetVisibility(bShowExtractInfo ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        if (bShowExtractInfo)
+        {
+            SignalAmountText->SetText(
+                FText::Format(
+                    NSLOCTEXT("HUD", "ExpectedSignalFmt", "Expected Signal : {0} ~ {1}"),
+                    FText::AsNumber(CachedSignalMin),
+                    FText::AsNumber(CachedSignalMax)
+                )
+            );
         }
     }
 }

@@ -20,16 +20,16 @@ public:
     // 아이템 정보(아키타입) 세팅
     void InitializeFromArchetype(const FSignalItemArchetype& Data);
 
-    // 정보 추출
+    // 정보 (범위 내 랜덤) 추출
     UFUNCTION(BlueprintCallable, Category = "Signal")
     int32 ExtractSignal();
-
-    // 추출 가능한 신호량을 반환
-    int32 GetRandomSignalYield() const;
-
+    UFUNCTION(BlueprintPure, Category = "Signal")
+    int32 GetSignalYieldMin() const { return SignalYieldMin; }
+    int32 GetSignalYieldMax() const { return SignalYieldMax; }
     float GetExtractTime() const { return ExtractTime; }
     float GetNoiseLevel() const { return NoiseLevel; }
     int32 GetSignalGrade() const { return SignalGrade; }
+    FName GetItemName() const { return ItemName; }
 
 protected:
     virtual void BeginPlay() override;
@@ -39,14 +39,14 @@ public:
     TObjectPtr<class UScanHighlightComponent> ScanHighlight;
 
 protected:
+    // ---------- Item 정보 -----------
+    // 추출 상호작용 범위 확인용 콜리전
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
+    FName ItemName;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item")
     TObjectPtr<class UStaticMeshComponent> StaticMeshComp;
 
-    // 추출 상호작용 범위 확인용 콜리전
-    UPROPERTY(VisibleAnywhere)
-    TObjectPtr<USphereComponent> InteractionTrigger;
-
-    // 아키타입에서 읽어오는 실제 값들
     UPROPERTY()
     int32 SignalYieldMin;
 
@@ -61,6 +61,10 @@ protected:
 
     UPROPERTY()
     int32 SignalGrade;
+
+    // 추출 상호작용 범위 확인용 콜리전
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<USphereComponent> InteractionTrigger;
 
     // 중복 추출 방지용
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Signal")

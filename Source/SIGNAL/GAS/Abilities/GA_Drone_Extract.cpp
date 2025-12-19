@@ -63,6 +63,8 @@ void UGA_Drone_Extract::ActivateAbility(
 	// HUD 시작 상태
 	if (CachedHUD)
 	{
+		CachedHUD->SetInteractTarget(CurrentTarget->GetFName());
+		CachedHUD->SetSignalAmount(CurrentTarget->GetSignalYieldMin(), CurrentTarget->GetSignalYieldMax());
 		CachedHUD->SetInteractState(EInteractHUDState::Extracting);
 		CachedHUD->SetInteractProgress(0.f);
 	}
