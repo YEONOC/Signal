@@ -50,7 +50,9 @@ void UGA_Drone_Scan::ActivateAbility(
     const float MinBatteryToScan = (BatteryMax > 0.f) ? BatteryMax * 0.05f : BatteryCost;
     if (Battery < MinBatteryToScan)
     {
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("Scan FAILED: Low battery (%.1f / %.1f)"), Battery, BatteryMax);
+#endif
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
         return;
     }
@@ -105,8 +107,9 @@ void UGA_Drone_Scan::ActivateAbility(
                 HighlightComp->HighlightForScan(2.0f);
 
                 bFoundInteresting = true;
-
+#if !UE_BUILD_SHIPPING
                 UE_LOG(LogTemp, Warning, TEXT("Scan hit actor (outlined): %s"), *HitActor->GetName());
+#endif
             }
 
             // 디버그용 스피어

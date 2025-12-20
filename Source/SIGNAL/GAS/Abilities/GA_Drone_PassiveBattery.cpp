@@ -25,9 +25,9 @@ void UGA_Drone_PassiveBattery::ActivateAbility(
     const FGameplayEventData* TriggerEventData)
 {
     Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Warning, TEXT("[PassiveBattery] Activated"));
-
+#endif
     if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
     {
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -136,7 +136,9 @@ void UGA_Drone_PassiveBattery::BatteryTick(const FGameplayAbilityActorInfo* Acto
         ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_LightOn);
 
         // (선택) 여기서 “배터리 부족” 사운드/이펙트 트리거 가능
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("Battery empty: Force light OFF"));
+#endif
     }
 
 }

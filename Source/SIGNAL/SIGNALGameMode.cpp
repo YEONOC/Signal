@@ -42,9 +42,9 @@ void ASIGNALGameMode::StartStage()
 
     // 1. StageSeed 받기
     const int32 StageSeed = RunSubsystem->GetCurrentStageSeed();
-
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Log, TEXT("Start Stage %d | Seed=%d"), RunSubsystem->GetCurrentStageIndex(), StageSeed);
-
+#endif
     // 2. Procedural Generation 호출
     FacilityGenerator->GenerateStage(StageSeed);
 
@@ -56,7 +56,9 @@ void ASIGNALGameMode::StartStage()
     }
     else
     {
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("Invalid StageConfig index: %d"), StageIndex);
+#endif
     }
 
     // 4. GameState 초기화
@@ -127,16 +129,18 @@ void ASIGNALGameMode::EndStage(bool bSuccess)
 
 void ASIGNALGameMode::HandleRunCleared()
 {
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Log, TEXT("Run Cleared!"));
-
+#endif
     // 결과 UI
     // 다음 Run 준비
 }
 
 void ASIGNALGameMode::HandleRunFailed()
 {
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Warning, TEXT("Run Failed"));
-
+#endif
     // 결과 UI
     // 재시작 or 메인 메뉴
 }

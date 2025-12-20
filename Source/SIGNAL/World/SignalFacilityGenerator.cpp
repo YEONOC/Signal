@@ -19,9 +19,10 @@ ASignalFacilityGenerator::ASignalFacilityGenerator()
 
 void ASignalFacilityGenerator::DebugLogGridLayout() const
 {
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Warning, TEXT("==== Facility Layout (Seed=%d) ===="), Seed);
     UE_LOG(LogTemp, Warning, TEXT("GridWidth=%d, GridHeight=%d"), GridWidth, GridHeight);
-
+#endif
     for (int32 y = GridHeight - 1; y >= 0; --y)  // 위에서 아래로 보려고 거꾸로
     {
         FString Row;
@@ -48,11 +49,13 @@ void ASignalFacilityGenerator::DebugLogGridLayout() const
             Row.AppendChar(Symbol);
             Row.AppendChar(TEXT(' '));
         }
-
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("%2d: %s"), y, *Row);
+#endif
     }
-
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Warning, TEXT("==================================="));
+#endif
 }
 
 
@@ -105,7 +108,9 @@ void ASignalFacilityGenerator::GenerateLayout()
 {
     if (GridWidth < 3 || GridHeight < 3)
     {
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("FacilityGenerator: Grid size too small"));
+#endif
         return;
     }
 
@@ -202,7 +207,9 @@ void ASignalFacilityGenerator::SpawnRooms()
 {
     if (!RoomSet)
     {
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Warning, TEXT("FacilityGenerator: RoomSet is nullptr"));
+#endif
         return;
     }
 
@@ -219,8 +226,9 @@ void ASignalFacilityGenerator::SpawnRooms()
         const FSignalRoomArchetype* Archetype = RoomSet->FindArchetype(Cell.RoomType);
         if (!Archetype || Archetype->RoomBlueprints.Num() == 0)
         {
-            UE_LOG(LogTemp, Warning, TEXT("No Room Archetype or Blueprints for RoomType %d"),
-                static_cast<int32>(Cell.RoomType));
+#if !UE_BUILD_SHIPPING
+            UE_LOG(LogTemp, Warning, TEXT("No Room Archetype or Blueprints for RoomType %d"), static_cast<int32>(Cell.RoomType));
+#endif
             continue;
         }
 
@@ -456,9 +464,9 @@ void ASignalFacilityGenerator::CollectSpawnPoints()
             EnemySpawnPoints.Add(SP);
         }
     }
-
-    UE_LOG(LogTemp, Log, TEXT("CollectSpawnPoints: Items=%d, Enemies=%d"),
-        ItemSpawnPoints.Num(), EnemySpawnPoints.Num());
+#if !UE_BUILD_SHIPPING
+    UE_LOG(LogTemp, Log, TEXT("CollectSpawnPoints: Items=%d, Enemies=%d"), ItemSpawnPoints.Num(), EnemySpawnPoints.Num());
+#endif
 }
 
 void ASignalFacilityGenerator::DistributeAndSpawnItems()
@@ -555,11 +563,14 @@ void ASignalFacilityGenerator::DistributeAndSpawnItems()
             const int32 AvgSignal = (ChosenItem->SignalYieldMin + ChosenItem->SignalYieldMax) / 2;
             TargetTotalSignal -= AvgSignal;
         }
+
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Log, TEXT("Spawn Item Location : (%d, %d)"), (int32)SP.WorldLocation.X, (int32)SP.WorldLocation.Y);
+#endif
     }
-
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Log, TEXT("DistributeAndSpawnItems: Remaining TargetSignal=%d"), TargetTotalSignal);
-
+#endif
 }
 
 void ASignalFacilityGenerator::DistributeAndSpawnEnemies()

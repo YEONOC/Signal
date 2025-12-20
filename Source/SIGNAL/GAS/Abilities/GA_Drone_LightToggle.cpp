@@ -17,7 +17,9 @@ UGA_Drone_LightToggle::UGA_Drone_LightToggle()
 
 void UGA_Drone_LightToggle::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+#if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Warning, TEXT("LightToggle Ability Activated!"));
+#endif
     if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
     {
         EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -61,8 +63,9 @@ void UGA_Drone_LightToggle::ActivateAbility(const FGameplayAbilitySpecHandle Han
         if (Battery <= 0.f || Battery < MinBatteryToTurnOn)
         {
             // 배터리 부족 → 켜기 실패
+#if !UE_BUILD_SHIPPING
             UE_LOG(LogTemp, Warning, TEXT("Cannot turn light ON: Low battery (%.1f / %.1f)"), Battery, BatteryMax);
-
+#endif
             // (선택) 여기서 HUD에 경고 표시, 사운드, 깜빡임 등
         }
         else

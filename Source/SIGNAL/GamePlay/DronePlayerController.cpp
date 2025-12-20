@@ -213,7 +213,9 @@ void ADronePlayerController::LightToggleInput(const FInputActionValue& Value)
             const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
             bool bResult = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_LightToggle);
+#if !UE_BUILD_SHIPPING
             UE_LOG(LogTemp, Warning, TEXT("LightToggleInput: TryActivateAbilitiesByTag = %s"), bResult ? TEXT("true") : TEXT("false"));
+#endif
         }
     }
 }
@@ -227,8 +229,9 @@ void ADronePlayerController::ScanInput(const FInputActionValue& Value)
             const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 
             bool bResult = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Scan);
-
+#if !UE_BUILD_SHIPPING
             UE_LOG(LogTemp, Warning, TEXT("ScanInput: TryActivateAbilitiesByTag = %s"), bResult ? TEXT("true") : TEXT("false"));
+#endif
         }
     }
 }
@@ -248,14 +251,17 @@ void ADronePlayerController::InteractInput_Pressed(const FInputActionValue& Valu
         if (ASignalExitActor* Exit = Drone->GetCurrentExit())
         {
             const bool bExitActivated = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Exit);
+#if !UE_BUILD_SHIPPING
             UE_LOG(LogTemp, Log, TEXT("InteractInput: TryActivate Exit = %s"), bExitActivated ? TEXT("true") : TEXT("false"));
-
+#endif
             return;
         }
 
         // Extract
         const bool bExtractActivated = ASC->TryActivateAbilitiesByInputTag(SignalTags.Input_Drone_Extract);
+#if !UE_BUILD_SHIPPING
         UE_LOG(LogTemp, Log, TEXT("InteractInput: TryActivate Extract = %s"), bExtractActivated ? TEXT("true") : TEXT("false"));
+#endif
 
     }
 }
@@ -270,8 +276,9 @@ void ADronePlayerController::InteractInput_Released(const FInputActionValue& Val
 
             ASC->CancelAbilitiesByInputTag(SignalTags.Input_Drone_Exit);
             ASC->CancelAbilitiesByInputTag(SignalTags.Input_Drone_Extract);
-
+#if !UE_BUILD_SHIPPING
             UE_LOG(LogTemp, Warning, TEXT("InteractInput: Cancel Exit/Extract"));
+#endif
         }
     }
 }

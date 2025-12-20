@@ -123,8 +123,10 @@ void UDroneHUDWidget::RefreshBatteryUI()
         BatteryText->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), BatteryInt, BatteryMaxInt)));
     }
 
-    // 디버그용
+#if !UE_BUILD_SHIPPING
+
     UE_LOG(LogTemp, Warning, TEXT("[HUD] Battery %.1f / %.1f"), Battery, BatteryMax);
+#endif 
 }
 
 // ========================= Interact (Extract / Exit) =========================

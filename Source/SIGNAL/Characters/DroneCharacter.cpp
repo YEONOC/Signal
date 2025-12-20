@@ -227,10 +227,9 @@ void ADroneCharacter::GiveStartupAbilities()
 		if (Spec.Ability)
 		{
 			FString TagString = Spec.DynamicAbilityTags.ToString();
-
-			UE_LOG(LogTemp, Warning, TEXT("ASC Ability: %s | DynamicTags: %s"),
-				*Spec.Ability->GetName(),
-				*TagString);
+#if !UE_BUILD_SHIPPING
+			UE_LOG(LogTemp, Warning, TEXT("ASC Ability: %s | DynamicTags: %s"), *Spec.Ability->GetName(), *TagString);
+#endif
 		}
 	}
 }
