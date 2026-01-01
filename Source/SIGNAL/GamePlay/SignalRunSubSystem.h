@@ -30,6 +30,7 @@ public:
     int32 GetCurrentStageIndex() const;
     int32 GetMaxStageCount() const;
     int32 GetTotalSignal() const;
+    int32 GetRequiredTotalSignal() const;
 
     /* Seed */
     int32 GetRunSeed() const;

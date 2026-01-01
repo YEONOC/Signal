@@ -82,6 +82,11 @@ int32 USignalRunSubsystem::GetTotalSignal() const
     return TotalCollectedSignal;
 }
 
+int32 USignalRunSubsystem::GetRequiredTotalSignal() const
+{
+    return RunConfig ? RunConfig->RequiredTotalSignal : 0;
+}
+
 int32 USignalRunSubsystem::GetRunSeed() const
 {
     return RunSeed;
