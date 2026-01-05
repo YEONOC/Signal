@@ -27,12 +27,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Signal")
     void AddSignal(int32 Amount);
 
-    // 현재 클리어 상태인지 체크
+    // 현재 클리어 상태인지 체크 (참고용, 자동 클리어는 하지 않음)
     UFUNCTION(BlueprintCallable, Category = "Signal")
     bool IsStageCleared() const;
-
-protected:
-    void HandleStageCleared();
 
 public:
     // 현재 플레이 중인 스테이지 설정

@@ -27,10 +27,8 @@ void ASignalGameState::AddSignal(int32 Amount)
 
     OnSignalAmountChanged.Broadcast(CurrentSignal);
 
-    if (IsStageCleared())
-    {
-        HandleStageCleared();
-    }
+    // Stage 클리어는 Exit로 탈출할 때만 발생
+    // Signal은 단순히 수집만 하고, Run 누적에 사용됨
 }
 
 bool ASignalGameState::IsStageCleared() const
@@ -40,11 +38,6 @@ bool ASignalGameState::IsStageCleared() const
         return false;
     }
 
-    return true;
-}
-
-void ASignalGameState::HandleStageCleared()
-{
-    OnStageCleared.Broadcast();
-    // 실제 클리어 처리(연출/다음 스테이지 이동)는 GameMode/HUD에서 처리
+    // 정확히 TargetSignalSupply에 도달했는지 확인
+    return CurrentSignal >= StageConfig->TargetSignalSupply;
 }
