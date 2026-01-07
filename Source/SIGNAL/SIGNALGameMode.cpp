@@ -4,8 +4,13 @@
 #include "Gameplay/SignalRunSubsystem.h"
 #include "World/SignalFacilityGenerator.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
 #include "SignalGameState.h"
 
+ASIGNALGameMode::ASIGNALGameMode()
+{
+    bStartPlayersAsSpectators = true;
+}
 
 void ASIGNALGameMode::BeginPlay()
 {
@@ -45,7 +50,8 @@ void ASIGNALGameMode::StartStage()
 #if !UE_BUILD_SHIPPING
     UE_LOG(LogTemp, Log, TEXT("Start Stage %d | Seed=%d"), RunSubsystem->GetCurrentStageIndex(), StageSeed);
 #endif
-    // 2. Procedural Generation 호출
+    // 2. 스테이지 생성 구독 && Procedural Generation 호출
+    FacilityGenerator->OnStageGenerated.AddDynamic(this, &ASIGNALGameMode::HandleStageGenerated);
     FacilityGenerator->GenerateStage(StageSeed);
 
     // 3. StageConfig 선택
@@ -68,6 +74,18 @@ void ASIGNALGameMode::StartStage()
     GS->OnStageCleared.RemoveDynamic(this, &ASIGNALGameMode::HandleStageCleared);
     GS->OnStageCleared.AddDynamic(this, &ASIGNALGameMode::HandleStageCleared);
 
+}
+
+void ASIGNALGameMode::HandleStageGenerated(const FTransform& StartTransform)
+{
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC) return;
+
+    // StartTransform 위치에 스폰/리스폰
+    RestartPlayerAtTransform(PC, StartTransform);
+
+    // 중복 방지
+    FacilityGenerator->OnStageGenerated.RemoveDynamic(this, &ASIGNALGameMode::HandleStageGenerated);
 }
 
 void ASIGNALGameMode::HandleStageCleared()

@@ -3,6 +3,7 @@
 // Room 생성
 #include "Engine/World.h"
 #include "SignalRoomBase.h"
+#include "GameFramework/PlayerStart.h"
 // 아이템 및 적 생성
 #include "SignalSpawnPoint.h"
 #include "SignalGameState.h"
@@ -94,11 +95,43 @@ void ASignalFacilityGenerator::GenerateStage(int32 InSeed)
     DistributeAndSpawnEnemies();
 
     DebugLogGridLayout();
+
+    if (SpawnedPlayerStart.IsValid())
+    {
+        const FTransform& ComputedStartTransform = SpawnedPlayerStart->GetActorTransform();
+        OnStageGenerated.Broadcast(ComputedStartTransform);
+    }
 }
 
 void ASignalFacilityGenerator::ClearGeneratedActors()
 {
-    // 추후 추가
+    // 스폰된 PlayerStart 제거
+    if (SpawnedPlayerStart.IsValid())
+    {
+        if (UWorld* World = GetWorld())
+        {
+            World->DestroyActor(SpawnedPlayerStart.Get());
+        }
+        SpawnedPlayerStart = nullptr;
+    }
+
+    // 스폰된 Room Actor들 제거
+    for (FSignalRoomCell& Cell : Grid)
+    {
+        if (Cell.SpawnedRoomActor.IsValid())
+        {
+            if (UWorld* World = GetWorld())
+            {
+                World->DestroyActor(Cell.SpawnedRoomActor.Get());
+            }
+            Cell.SpawnedRoomActor = nullptr;
+        }
+    }
+
+    // 그리드 초기화
+    Grid.Empty();
+    ItemSpawnPoints.Empty();
+    EnemySpawnPoints.Empty();
 }
 
 /**
@@ -289,6 +322,12 @@ void ASignalFacilityGenerator::SpawnRooms()
             {
                 RoomBase->ApplyDoorConfig(Cell.Doors);
             }
+        }
+
+        // Start Room에 PlayerStart 배치
+        if (Cell.RoomType == ESignalRoomType::Start)
+        {
+            SpawnPlayerStart(Cell, Spawned);
         }
     }
 }
@@ -576,4 +615,46 @@ void ASignalFacilityGenerator::DistributeAndSpawnItems()
 void ASignalFacilityGenerator::DistributeAndSpawnEnemies()
 {
     // 추후 추가
+}
+
+void ASignalFacilityGenerator::SpawnPlayerStart(const FSignalRoomCell& Cell, AActor* StartRoom)
+{
+    UWorld* World = GetWorld();
+    if (!World || !StartRoom)
+    {
+#if !UE_BUILD_SHIPPING
+        UE_LOG(LogTemp, Warning, TEXT("SpawnPlayerStart: Invalid World or StartRoom"));
+#endif
+        return;
+    }
+
+    // Start Room의 위치 기준으로 PlayerStart 배치
+    FVector PlayerStartLocation = StartRoom->GetActorLocation();
+    
+    // PlayerStart Actor 스폰
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    
+    APlayerStart* PlayerStart = World->SpawnActor<APlayerStart>(
+        PlayerStartLocation,
+        FRotator::ZeroRotator,
+        SpawnParams
+    );
+
+    if (PlayerStart)
+    {
+        // 스폰된 PlayerStart 저장
+        SpawnedPlayerStart = PlayerStart;
+        
+#if !UE_BUILD_SHIPPING
+        UE_LOG(LogTemp, Log, TEXT("SpawnPlayerStart: Created at (%f, %f, %f)"), 
+            PlayerStartLocation.X, PlayerStartLocation.Y, PlayerStartLocation.Z);
+#endif
+    }
+    else
+    {
+#if !UE_BUILD_SHIPPING
+        UE_LOG(LogTemp, Warning, TEXT("SpawnPlayerStart: Failed to spawn PlayerStart"));
+#endif
+    }
 }

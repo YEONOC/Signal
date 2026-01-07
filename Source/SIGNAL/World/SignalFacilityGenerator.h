@@ -13,6 +13,9 @@
  * - 그리드 기반으로 RoomCell들을 생성하고
  * - USignalRoomSet을 참고해서 실제 Room BP를 스폰
  */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStageGenerated, const FTransform&, StartTransform);
+
 UCLASS()
 class SIGNAL_API ASignalFacilityGenerator : public AActor
 {
@@ -39,6 +42,9 @@ public:
 
     UFUNCTION()
     void GenerateStage(int32 InSeed);
+
+    UPROPERTY(BlueprintAssignable)
+    FOnStageGenerated OnStageGenerated;
 
     UFUNCTION()
     void ClearGeneratedActors();
@@ -76,6 +82,10 @@ protected:
     TArray<FSignalItemSpawnPoint> ItemSpawnPoints;
     TArray<FSignalEnemySpawnPoint> EnemySpawnPoints;
 
+    // 스폰된 PlayerStart
+    UPROPERTY()
+    TWeakObjectPtr<class APlayerStart> SpawnedPlayerStart;
+
 private:
     // 레이아웃 생성: RoomType 배치
     void GenerateLayout();
@@ -100,4 +110,7 @@ private:
     void CollectSpawnPoints();
     void DistributeAndSpawnItems();
     void DistributeAndSpawnEnemies();
+
+    // Start Room에 PlayerStart 배치
+    void SpawnPlayerStart(const FSignalRoomCell& Cell, AActor* StartRoom);
 };

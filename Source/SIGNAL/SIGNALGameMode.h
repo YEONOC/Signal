@@ -29,10 +29,14 @@ public:
     void EndStage(bool bSuccess);
 
 protected:
+    ASIGNALGameMode();
+
     virtual void BeginPlay() override;
 
     /* Stage 흐름 */
     void StartStage();
+    UFUNCTION()
+    void HandleStageGenerated(const FTransform& StartTransform);
     UFUNCTION()
     void HandleStageCleared();
     UFUNCTION()
