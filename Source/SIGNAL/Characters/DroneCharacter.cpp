@@ -43,9 +43,17 @@ ADroneCharacter::ADroneCharacter()
 void ADroneCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+}
+
+void ADroneCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// PlayerController가 Pawn을 Possess할 때 Ability 부여
+	// 이 시점에는 PlayerController가 이미 설정되어 있음
 	if (AbilitySystemComp)
 	{
+		// InitAbilityActorInfo는 Controller가 있을 때 호출해야 함
 		AbilitySystemComp->InitAbilityActorInfo(this, this);
 		InitializeAttributes();
 		GiveStartupAbilities();
@@ -53,7 +61,6 @@ void ADroneCharacter::BeginPlay()
 		const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
 		AbilitySystemComp->TryActivateAbilitiesByTag(FGameplayTagContainer(SignalTags.Ability_Drone_PassiveBattery));
 	}
-
 }
 
 

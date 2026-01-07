@@ -81,7 +81,6 @@ void ASIGNALGameMode::HandleStageGenerated(const FTransform& StartTransform)
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
     if (!PC) return;
 
-    // StartTransform 위치에 스폰/리스폰
     RestartPlayerAtTransform(PC, StartTransform);
 
     // 중복 방지

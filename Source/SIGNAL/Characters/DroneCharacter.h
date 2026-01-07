@@ -36,6 +36,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Called when possessed by a controller
+	virtual void PossessedBy(AController* NewController) override;
+
 public:
     UPROPERTY()
     TObjectPtr<USpotLightComponent> DroneLight;
