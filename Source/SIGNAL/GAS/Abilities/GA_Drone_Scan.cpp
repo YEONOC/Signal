@@ -9,6 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
 #include "Compo/ScanHighlightComponent.h"
+#include "TimerManager.h"
 
 UGA_Drone_Scan::UGA_Drone_Scan()
 {
@@ -63,62 +64,8 @@ void UGA_Drone_Scan::ActivateAbility(
         return;
     }
 
-
-    // 스캔 로직: 구체 트레이스
-    FVector Origin = Drone->GetActorLocation();
-    UWorld* World = Drone->GetWorld();
-    if (!World)
-    {
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-        return;
-    }
-
-    TArray<FOverlapResult> Overlaps;
-    FCollisionShape Sphere = FCollisionShape::MakeSphere(ScanRadius);
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(DroneScan), false, Drone);
-    FCollisionObjectQueryParams ObjQuery;
-    ObjQuery.AddObjectTypesToQuery(ECC_SignalItem); // Item
-    ObjQuery.AddObjectTypesToQuery(ECC_SignalEnemy); // Enemy
-
-    bool bHitSomething = World->OverlapMultiByObjectType(
-        Overlaps,
-        Origin,
-        FQuat::Identity,
-        ObjQuery,      // 필요한 채널로 변경 가능
-        Sphere,
-        Params
-    );
-
-    bool bFoundInteresting = false;
-
-    if (bHitSomething)
-    {
-        for (const FOverlapResult& Res : Overlaps)
-        {
-            AActor* HitActor = Res.GetActor();
-            if (!HitActor || HitActor == Drone) continue;
-
-            // 스캔 대상에만 아웃라인: ScanHighlightComponent가 있을 때만
-            if (UScanHighlightComponent* HighlightComp = HitActor->FindComponentByClass<UScanHighlightComponent>())
-            {
-                // HazardLevel 읽어오기
-                int32 Hazard = HighlightComp->SignalGrade;
-
-                HighlightComp->HighlightForScan(2.0f);
-
-                bFoundInteresting = true;
-#if !UE_BUILD_SHIPPING
-                UE_LOG(LogTemp, Warning, TEXT("Scan hit actor (outlined): %s"), *HitActor->GetName());
-#endif
-            }
-
-            // 디버그용 스피어
-            // DrawDebugSphere(World, HitActor->GetActorLocation(), 50.f, 12, FColor::Green, false, 1.0f);
-        }
-    }
-
-    // 디버그: 전체 스캔 범위 표시
-    // DrawDebugSphere(World, Origin, ScanRadius, 32, bFoundInteresting ? FColor::Green : FColor::Red, false, 1.0f);
+    // Blueprint의 Event ActivateAbility가 실행되도록 호출
+    K2_ActivateAbility();
 
     // 배터리 즉시 소모
     if (Drone->BatteryDeltaEffect && AttrSet)
@@ -142,15 +89,148 @@ void UGA_Drone_Scan::ActivateAbility(
         }
     }
 
-    // 감지 성공 시 태그 부여 (나중에 UI 등에 사용 가능)
-    if (bFoundInteresting)
+    // 스캔 시작: 확산되는 반경으로 점진적 감지
+    ScanOrigin = Drone->GetActorLocation();
+    bFoundInterestingAccum = false;
+    HighlightedActors.Reset();
+    StartScanTick();
+}
+
+void UGA_Drone_Scan::EndAbility(
+    const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayAbilityActivationInfo ActivationInfo,
+    bool bReplicateEndAbility,
+    bool bWasCancelled)
+{
+    StopScanTick();
+    Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UGA_Drone_Scan::StartScanTick()
+{
+    UWorld* World = GetWorld();
+    if (!World)
     {
-        ASC->AddLooseGameplayTag(SignalTags.State_Drone_ScanHit);
-    }
-    else
-    {
-        ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_ScanHit);
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
     }
 
-    EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+    if (ScanSpeed <= 0.f)
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
+    }
+
+    ScanStartTime = World->GetTimeSeconds();
+
+    // 즉시 1회 실행해서 반응성을 높임
+    HandleScanTick();
+
+    if (ScanTickInterval <= 0.f)
+    {
+        return;
+    }
+
+    World->GetTimerManager().SetTimer(
+        ScanTickHandle,
+        this,
+        &UGA_Drone_Scan::HandleScanTick,
+        ScanTickInterval,
+        true
+    );
+}
+
+void UGA_Drone_Scan::HandleScanTick()
+{
+    const FGameplayAbilityActorInfo* ActorInfo = GetCurrentActorInfo();
+    if (!ActorInfo || !ActorInfo->AvatarActor.IsValid())
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
+    }
+
+    ADroneCharacter* Drone = Cast<ADroneCharacter>(ActorInfo->AvatarActor.Get());
+    UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+    if (!Drone || !ASC)
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
+    }
+
+    UWorld* World = Drone->GetWorld();
+    if (!World)
+    {
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
+    }
+
+    const float Elapsed = World->GetTimeSeconds() - ScanStartTime;
+    const float CurrentRadius = FMath::Min(ScanSpeed * Elapsed, ScanRadius);
+
+    TArray<FOverlapResult> Overlaps;
+    FCollisionShape Sphere = FCollisionShape::MakeSphere(CurrentRadius);
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(DroneScan), false, Drone);
+    FCollisionObjectQueryParams ObjQuery;
+    ObjQuery.AddObjectTypesToQuery(ECC_SignalItem); // Item
+    ObjQuery.AddObjectTypesToQuery(ECC_SignalEnemy); // Enemy
+
+    bool bHitSomething = World->OverlapMultiByObjectType(
+        Overlaps,
+        ScanOrigin,
+        FQuat::Identity,
+        ObjQuery,
+        Sphere,
+        Params
+    );
+
+    if (bHitSomething)
+    {
+        for (const FOverlapResult& Res : Overlaps)
+        {
+            AActor* HitActor = Res.GetActor();
+            if (!HitActor || HitActor == Drone) continue;
+
+            if (HighlightedActors.Contains(HitActor))
+            {
+                continue;
+            }
+
+            // 스캔 대상에만 아웃라인: ScanHighlightComponent가 있을 때만
+            if (UScanHighlightComponent* HighlightComp = HitActor->FindComponentByClass<UScanHighlightComponent>())
+            {
+                HighlightComp->HighlightForScan(ScanHighlightDuration);
+                HighlightedActors.Add(HitActor);
+
+                bFoundInterestingAccum = true;
+#if !UE_BUILD_SHIPPING
+                UE_LOG(LogTemp, Warning, TEXT("Scan hit actor (outlined): %s"), *HitActor->GetName());
+#endif
+            }
+        }
+    }
+
+    if (CurrentRadius >= ScanRadius)
+    {
+        const FSignalGameplayTags& SignalTags = FSignalGameplayTags::Get();
+        if (bFoundInterestingAccum)
+        {
+            ASC->AddLooseGameplayTag(SignalTags.State_Drone_ScanHit);
+        }
+        else
+        {
+            ASC->RemoveLooseGameplayTag(SignalTags.State_Drone_ScanHit);
+        }
+
+        StopScanTick();
+        EndAbility(CurrentSpecHandle, ActorInfo, CurrentActivationInfo, true, false);
+    }
+}
+
+void UGA_Drone_Scan::StopScanTick()
+{
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(ScanTickHandle);
+    }
 }
