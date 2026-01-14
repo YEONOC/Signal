@@ -125,7 +125,7 @@ void UDroneHUDWidget::RefreshBatteryUI()
 
 #if !UE_BUILD_SHIPPING
 
-    UE_LOG(LogTemp, Warning, TEXT("[HUD] Battery %.1f / %.1f"), Battery, BatteryMax);
+    //UE_LOG(LogTemp, Warning, TEXT("[HUD] Battery %.1f / %.1f"), Battery, BatteryMax);
 #endif 
 }
 
