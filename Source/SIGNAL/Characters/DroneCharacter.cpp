@@ -50,10 +50,8 @@ void ADroneCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	// PlayerController가 Pawn을 Possess할 때 Ability 부여
-	// 이 시점에는 PlayerController가 이미 설정되어 있음
 	if (AbilitySystemComp)
 	{
-		// InitAbilityActorInfo는 Controller가 있을 때 호출해야 함
 		AbilitySystemComp->InitAbilityActorInfo(this, this);
 		InitializeAttributes();
 		GiveStartupAbilities();
@@ -95,7 +93,6 @@ void ADroneCharacter::Tick(float DeltaSeconds)
 
 	if (Speed > MinSpeedForTilt)
 	{
-		// 월드 → 로컬 속도 벡터로 변환
 		const FRotator ActorRot = GetActorRotation();
 		const FVector LocalVel = ActorRot.UnrotateVector(Vel);
 
@@ -104,10 +101,8 @@ void ADroneCharacter::Tick(float DeltaSeconds)
 		{
 			LocalDir.Normalize();
 
-			// 전진(앞)일수록 Pitch(-), 후진일수록 Pitch(+)
 			TargetPitch = -LocalDir.X * MaxTiltAngle;
 
-			// 오른쪽 이동일수록 Roll(+), 왼쪽 이동일수록 Roll(-)
 			TargetRoll = LocalDir.Y * MaxTiltAngle;
 		}
 	}
@@ -228,7 +223,6 @@ void ADroneCharacter::GiveStartupAbilities()
 				FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, this));
 		}
 	}
-	// 🔻 여기서 실제 ASC가 가지고 있는 어빌리티 목록 로그 찍기
 	for (const FGameplayAbilitySpec& Spec : AbilitySystemComp->GetActivatableAbilities())
 	{
 		if (Spec.Ability)
