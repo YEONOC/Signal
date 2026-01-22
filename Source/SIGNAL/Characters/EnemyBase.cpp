@@ -9,8 +9,8 @@ AEnemyBase::AEnemyBase()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-    Root = CreateDefaultSubobject<USceneComponent>("Root");
-    SetRootComponent(Root);
+    /*Root = CreateDefaultSubobject<USceneComponent>("Root");
+    SetRootComponent(Root);*/
 
     // BodyCollision = CreateDefaultSubobject<UCapsuleComponent>("Collision");
 
@@ -32,12 +32,12 @@ void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-    switch (State)
-    {
-    case EEnemyState::Idle:   HandleIdle(DeltaTime); break;
-    case EEnemyState::Combat: HandleCombat(DeltaTime); break;
-    case EEnemyState::Dead:   /* no-op */ break;
-    }
+    //switch (State)
+    //{
+    //case EEnemyState::Idle:   HandleIdle(DeltaTime); break;
+    //case EEnemyState::Combat: HandleCombat(DeltaTime); break;
+    //case EEnemyState::Dead:   /* no-op */ break;
+    //}
 
 }
 
@@ -59,5 +59,6 @@ void AEnemyBase::OnDeath()
 
 void AEnemyBase::SetState(EEnemyState NewState)
 {
+    State = NewState;
 }
 

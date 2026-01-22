@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
 UENUM(BlueprintType)
@@ -20,7 +20,7 @@ class UWeaponComponent;
 class UEnemyConfigData;
 
 UCLASS(Abstract)
-class SIGNAL_API AEnemyBase : public APawn
+class SIGNAL_API AEnemyBase : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -39,7 +39,6 @@ protected:
     virtual void Tick(float DeltaTime) override;
 
 public:	
-    // 확장 포인트: 타입별로 다르게 구현
     virtual void HandleIdle(float DeltaSeconds);
     virtual void HandleCombat(float DeltaSeconds);
 
@@ -49,7 +48,6 @@ public:
     void SetState(EEnemyState NewState);
 
 protected:
-    // Root/Visual/Collision은 프로젝트 스타일에 맞게
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USceneComponent* Root;
 
